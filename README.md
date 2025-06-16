@@ -1,2 +1,45 @@
 # pyRifReg
-Python package for Recentered Influence Function (RIF) regression
+
+A Python package for Recentered Influence Function (RIF) regression analysis. This package provides tools for analyzing distributional effects in econometrics and data science applications.
+
+## Installation
+
+You can install the package using pip:
+
+```bash
+pip install pyRifReg
+```
+
+## Features
+
+- Implementation of Recentered Influence Function (RIF) regression
+- Support for various distributional statistics (mean, quantiles, variance, etc.)
+- Easy-to-use API for regression analysis
+- Integration with pandas and scikit-learn
+
+## Quick Start
+
+```python
+import numpy as np
+import pandas as pd
+from pyRifReg import RIFRegression
+
+# Create sample data
+X = np.random.randn(1000, 2)
+y = np.random.randn(1000)
+
+# Initialize and fit RIF regression
+rif_reg = RIFRegression(statistic='mean')
+rif_reg.fit(X, y)
+
+# Get regression results
+results = rif_reg.summary()
+```
+
+## Documentation
+
+For detailed documentation and examples, please visit our [documentation page](https://github.com/yourusername/pyRifReg).
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
