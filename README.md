@@ -1,5 +1,9 @@
 # pyrifreg
 
+ADD EXAMPLE OF QREG ALONG ENTIRE DISTRIBUTION
+ADD BOOTSRAP SUPPORT
+ADD NOTE ON INFERENCE AND IMPACT OF ALREADY ESTIMATED QUANTITIES
+
 A Python package for Recentered Influence Function (RIF) regression analysis. This package provides tools for analyzing distributional effects in econometrics and data science applications.
 
 ## Installation
@@ -31,7 +35,7 @@ $$
 
 Intuitively, $\mathrm{IF}(y)$ tells you how much an observation at $y$ “pulls” the estimator away from its nominal value.  Influence functions underpin robust statistics and are central to asymptotic variance calculations.
 
-### Recentered Influence Functions
+### Recentered Influence Functions (RIFs)
 
 While $\mathrm{IF}(y)$ has mean zero under $F$, many applications (e.g. regression) require a variable whose expectation equals the functional of interest.  A **recentered influence function (RIF)** adds back the original functional:
 
@@ -103,7 +107,6 @@ median_rif = RIFRegression(statistic='quantile', q=0.5)
 * Firpo, S., Fortin, N. M., & Lemieux, T. (2009). *Unconditional Quantile Regressions*. Econometrica, 77(3), 953–973.
 * Hampel, F. R. (1974). *The Influence Curve and Its Role in Robust Estimation*. Journal of the American Statistical Association, 69(346), 383–393.
 * Rios-Avila, F. (2020). *Recentered influence functions (RIFs) in Stata: RIF regression and RIF decomposition*. The Stata Journal, 20(1), 51-94.
-
 
 ## License
 
