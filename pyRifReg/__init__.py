@@ -1,5 +1,5 @@
 """
-pyRifReg - A Python package for Recentered Influence Function (RIF) regression
+pyrifreg - A Python package for Recentered Influence Function (RIF) regression
 """
 
 __version__ = "0.1.0"

@@ -1,10 +1,10 @@
 """
-Basic usage example of pyRifReg package.
+Basic usage example of pyrifreg package.
 """
 
 import numpy as np
 import pandas as pd
-from pyRifReg import RIFRegression
+from pyrifreg import RIFRegression
 
 # Generate sample data
 np.random.seed(42)
@@ -33,8 +33,26 @@ var_rif.fit(X, y)
 print("\nVariance RIF Regression Results:")
 print(var_rif.summary())
 
-# Make predictions
+# Create and fit Gini coefficient RIF regression
+gini_rif = RIFRegression(statistic='gini')
+gini_rif.fit(X, y)
+print("\nGini Coefficient RIF Regression Results:")
+print(gini_rif.summary())
+
+# Create and fit IQR RIF regression
+iqr_rif = RIFRegression(statistic='iqr')
+iqr_rif.fit(X, y)
+print("\nIQR RIF Regression Results:")
+print(iqr_rif.summary())
+
+# Create and fit entropy RIF regression
+entropy_rif = RIFRegression(statistic='entropy')
+entropy_rif.fit(X, y)
+print("\nEntropy RIF Regression Results:")
+print(entropy_rif.summary())
+
+# Make predictions using the mean RIF model
 X_new = np.random.randn(5, 2)
 predictions = mean_rif.predict(X_new)
-print("\nPredictions for new data:")
+print("\nPredictions for new data using mean RIF:")
 print(predictions) 

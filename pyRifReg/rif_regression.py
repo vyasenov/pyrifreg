@@ -8,6 +8,7 @@ from scipy import stats
 from sklearn.base import BaseEstimator, RegressorMixin
 from statsmodels.regression.linear_model import OLS
 from statsmodels.tools.tools import add_constant
+from .rif_generators import get_rif_generator
 
 
 class RIFRegression(BaseEstimator, RegressorMixin):
@@ -15,7 +16,7 @@ class RIFRegression(BaseEstimator, RegressorMixin):
     Recentered Influence Function (RIF) Regression.
     
     This class implements RIF regression for various distributional statistics
-    such as mean, quantiles, and variance.
+    such as mean, quantiles, variance, Gini coefficient, and IQR.
     
     Parameters
     ----------
@@ -24,6 +25,9 @@ class RIFRegression(BaseEstimator, RegressorMixin):
         - 'mean': Mean
         - 'quantile': Quantile (requires q parameter)
         - 'variance': Variance
+        - 'gini': Gini coefficient
+        - 'iqr': Interquartile Range
+        - 'entropy': Entropy
     q : float, optional
         Quantile level (between 0 and 1) when statistic='quantile'
     """
@@ -33,27 +37,16 @@ class RIFRegression(BaseEstimator, RegressorMixin):
         self.q = q
         self.model = None
         self.results = None
+        self.rif_generator = None
         
-    def _compute_rif(self, y):
-        """Compute the Recentered Influence Function for the chosen statistic."""
-        n = len(y)
-        
-        if self.statistic == 'mean':
-            rif = y
-        elif self.statistic == 'quantile':
+    def _get_rif_generator(self):
+        """Get the appropriate RIF generator based on the statistic."""
+        kwargs = {}
+        if self.statistic == 'quantile':
             if self.q is None:
                 raise ValueError("Quantile level 'q' must be specified for quantile RIF")
-            q_val = np.quantile(y, self.q)
-            f_q = stats.gaussian_kde(y)(q_val)
-            rif = q_val + (self.q - (y <= q_val)) / f_q
-        elif self.statistic == 'variance':
-            mean_y = np.mean(y)
-            var_y = np.var(y)
-            rif = (y - mean_y)**2
-        else:
-            raise ValueError(f"Unknown statistic: {self.statistic}")
-            
-        return rif
+            kwargs['q'] = self.q
+        return get_rif_generator(self.statistic, **kwargs)
     
     def fit(self, X, y):
         """
@@ -74,8 +67,9 @@ class RIFRegression(BaseEstimator, RegressorMixin):
         X = np.asarray(X)
         y = np.asarray(y)
         
-        # Compute RIF
-        rif = self._compute_rif(y)
+        # Get RIF generator and compute RIF
+        self.rif_generator = self._get_rif_generator()
+        rif = self.rif_generator.compute(y)
         
         # Add constant term
         X = add_constant(X)
