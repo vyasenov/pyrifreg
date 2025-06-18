@@ -16,7 +16,7 @@ setup(
     description="A Python package for Recentered Influence Function (RIF) regression",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/pyrifreg",
+    url="https://github.com/vyasenov/pyrifreg",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

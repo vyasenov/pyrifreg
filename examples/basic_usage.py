@@ -50,9 +50,3 @@ entropy_rif = RIFRegression(statistic='entropy')
 entropy_rif.fit(X, y)
 print("\nEntropy RIF Regression Results:")
 print(entropy_rif.summary())
-
-# Make predictions using the mean RIF model
-X_new = np.random.randn(5, 2)
-predictions = mean_rif.predict(X_new)
-print("\nPredictions for new data using mean RIF:")
-print(predictions) 

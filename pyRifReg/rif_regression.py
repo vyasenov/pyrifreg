@@ -80,27 +80,6 @@ class RIFRegression(BaseEstimator, RegressorMixin):
         
         return self
     
-    def predict(self, X):
-        """
-        Predict using the fitted RIF regression model.
-        
-        Parameters
-        ----------
-        X : array-like of shape (n_samples, n_features)
-            Samples
-            
-        Returns
-        -------
-        y_pred : array-like of shape (n_samples,)
-            Predicted values
-        """
-        if self.results is None:
-            raise ValueError("Model has not been fitted yet")
-            
-        X = np.asarray(X)
-        X = add_constant(X)
-        return self.results.predict(X)
-    
     def summary(self):
         """
         Get a summary of the regression results.
