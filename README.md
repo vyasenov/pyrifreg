@@ -1,10 +1,6 @@
-# pyrifreg
+# pyrifreg [coming soon]
 
-ADD EXAMPLE OF QREG ALONG ENTIRE DISTRIBUTION
-ADD BOOTSRAP SUPPORT
-ADD NOTE ON INFERENCE AND IMPACT OF ALREADY ESTIMATED QUANTITIES
-
-A Python package for Recentered Influence Function (RIF) regression analysis. This package provides tools for analyzing distributional effects in econometrics and data science applications.
+A Python package for Recentered Influence Function (RIF) regression analysis. Provides tools for analyzing distributional effects in econometrics and data science applications.
 
 ## Installation
 
@@ -17,59 +13,112 @@ pip install pyrifreg
 ## Features
 
 - Implementation of Recentered Influence Function (RIF) regression
-- Support for various distributional statistics (mean, quantiles, variance, etc.)
+- Support for various distributional statistics (mean, quantiles, variance, gini, etc.)
 - Easy-to-use API for regression analysis
 - Integration with pandas and scikit-learn
 
 ## Background
 
-### Influence Functions
+#### Motivation: From Conditional to Unconditional Effects
 
-An **influence function (IF)** characterizes the first‐order effect on a statistical functional $T(F)$ (e.g. a quantile or a variance) of an infinitesimal contamination at point $y$.  Formally, if $F$ is the true distribution and $F_\varepsilon = (1-\varepsilon)F + \varepsilon \delta_y$, then
+Most of you are familiar with conditional moments—e.g.
 
 $$
-\mathrm{IF}(y; T, F)
+\mathbb{E}[Y \mid X = x]
+$$
+
+or conditional quantiles
+
+$$
+Q_\tau(Y \mid X = x).
+$$
+
+But policy questions often concern how a change in some covariate $X$ shifts the *entire* (marginal or unconditional) distribution of an outcome $Y$.  For instance:
+
+* **Inequality analysis:**  How would increasing education change the 90th vs.\ 10th percentile of the wage distribution?
+* **Welfare evaluation:**  What is the impact of a cash transfer on the variance or Gini of consumption?
+
+Formally, let $F_Y$ be the baseline distribution of $Y$, and imagine a small intervention on $X$ that perturbs $F_Y$ to $G_Y$.  For a scalar functional $\nu(\cdot)$ (e.g.\ mean, variance, quantile), define the *unconditional policy effect*:
+
+$$
+\Delta\nu \;=\;\nu(G_Y)\;-\;\nu(F_Y).
+$$
+
+Our goal is to estimate how “marginal shifts” in $X$ translate into $\Delta\nu$.
+
+---
+
+#### Influence Functions (IF)
+
+An **influence function** captures the *first‐order* sensitivity of a distributional functional $T(F)$ to an infinitesimal contamination at the point $y$.  Concretely, define
+
+$$
+F_\varepsilon = (1-\varepsilon)F + \varepsilon\,\delta_y,
+$$
+
+where $\delta_y$ is a point‐mass at $y$.  Then
+
+$$
+\mathrm{IF}(y;\,T, F)
 \;=\;
-\lim_{\varepsilon\to 0}\frac{T(F_\varepsilon) - T(F)}{\varepsilon}.
+\lim_{\varepsilon\to 0}
+\frac{T(F_\varepsilon) - T(F)}{\varepsilon}.
 $$
 
-Intuitively, $\mathrm{IF}(y)$ tells you how much an observation at $y$ “pulls” the estimator away from its nominal value.  Influence functions underpin robust statistics and are central to asymptotic variance calculations.
+IFs tell us "how much does a single observation at $y$ “pull” the estimator of $T$ away from its nominal value".
 
-### Recentered Influence Functions (RIFs)
+---
 
-While $\mathrm{IF}(y)$ has mean zero under $F$, many applications (e.g. regression) require a variable whose expectation equals the functional of interest.  A **recentered influence function (RIF)** adds back the original functional:
+#### Recentered Influence Functions (RIF)
+
+Since $\mathbb{E}_F[\mathrm{IF}(Y;T,F)] = 0$, we cannot regress $\mathrm{IF}(Y)$ directly to target $T(F)$.  The **recentered influence function** adds back the functional:
 
 $$
-\mathrm{RIF}(y; T, F) \;=\; T(F) \;+\; \mathrm{IF}(y; T, F).
+\mathrm{RIF}(y;\,T, F)
+\;=\;
+T(F)\;+\;\mathrm{IF}(y;\,T, F).
 $$
 
-Because $\mathbb{E}_F[\mathrm{RIF}(Y)] = T(F)$, one can regress the RIF on covariates to study how covariates shift the target functional.  This idea was popularized by Firpo, Fortin & Lemieux (2009) for decompositions of wage distributions and quantile regressions.
+Key property:
 
-### RIF Regression
+$$
+\mathbb{E}_F[\mathrm{RIF}(Y)] \;=\; T(F).
+$$
+
+Thus $\mathrm{RIF}(Y)$ is an *unbiased* “pseudo‐outcome” for $T(F)$, which we can now relate to covariates.
+
+---
+
+#### RIF Regression
 
 A **RIF regression** proceeds in two steps:
 
-1. **Compute** $T(F)$ and the influence function $\mathrm{IF}(y_i; T, F)$ for each observation $i$.
-2. **Form** the recentered outcome
+1. **Compute**  the plug‐in estimate $T(\widehat F)$ and the influence function $\mathrm{IF}(y_i;T,\widehat F)$ for each $i$.
+2. **Form** the RIF outcome $r_i = T(\widehat F) + \mathrm{IF}(y_i;\,T,\widehat F),$ and **estimate** the linear model
 
    $$
-     r_i = \mathrm{RIF}(y_i; T, F) = T(F) + \mathrm{IF}(y_i; T, F),
+     r_i \;=\; x_i^\top\beta \;+\;\varepsilon_i.
    $$
 
-   and **fit** a linear (or nonlinear) model
+Under regularity conditions (smoothness of $T$, overlap in $X$, etc.), each component $\beta_j$ approximates the *marginal effect* of $X_j$ on the unconditional functional $T(F_Y)$.
 
-   $$
-     r_i = x_i^\top \beta \;+\;\varepsilon_i.
-   $$
+---
 
-   Under mild regularity conditions, the estimated $\beta$ captures the marginal association between covariates $X$ and the target functional $T$, analogously to how OLS coefficients reveal shifts in the conditional mean.
+#### Unconditional Quantile Regression (UQR)
 
-**Key features**:
+Unconditional quantile regression is simply RIF regression with $T(F)=Q_\tau(Y)$.  Then:
 
-* **Flexibility**: Targets arbitrary distributional statistics—means, variances, quantiles, Gini coefficients, etc.
-* **Interpretability**: Linear–model coefficients have a clear meaning in terms of shifting the population functional.
-* **Inference**: Standard errors can be obtained via the “sandwich” variance formula, since the RIF regression is semiparametrically efficient for many functionals.
+$$
+r_i = Q_\tau(Y) \;+\;\frac{\tau - \mathbf{1}\{y_i \le Q_\tau\}}{f_Y(Q_\tau)},
+$$
 
+and regressing $r_i$ on $X$ yields estimates of how a marginal change in each $X_j$ shifts the $\tau$-th **marginal** quantile of $Y$. In contrast. conditional QR gives you how $X$ shifts the *conditional* quantile $Q_\tau(Y\mid X)$; UQR gives *population‐level* shifts. Personally, I find the former quantity this much less interpretable or meaningful.
+
+---
+
+#### Inference
+
+Inference in RIF regression proceeds via a two‐stage procedure—first estimating the target functional $T(\widehat F)$, any necessary density (e.g.\ $f_Y(Q_\tau)$), and the influence values $\mathrm{IF}(y_i)$, then regressing the recentered outcomes on covariates; because the RIFs are themselves estimated, naïve OLS standard errors are inconsistent and must be adjusted. The package supports bootstrap estimation of standard errors.
 
 ## Quick Start
 
@@ -83,23 +132,12 @@ X = np.random.randn(1000, 2)
 y = np.random.randn(1000)
 
 # Initialize and fit RIF regression
-rif_reg = RIFRegression(statistic='mean')
-rif_reg.fit(X, y)
+median_rif = RIFRegression(statistic='quantile', q=0.5)
+median_rif.fit(X, y)
 
 # Get regression results
-results = rif_reg.summary()
-
-# For Gini coefficient
-gini_rif = RIFRegression(statistic='gini')
-
-# For IQR
-iqr_rif = RIFRegression(statistic='iqr')
-
-# For entropy
-entropy_rif = RIFRegression(statistic='entropy')
-
-# For quantiles (as before)
-median_rif = RIFRegression(statistic='quantile', q=0.5)
+results = median_rif.summary()
+print(results)
 ```
 
 ## References
@@ -111,3 +149,5 @@ median_rif = RIFRegression(statistic='quantile', q=0.5)
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Changelog

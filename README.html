@@ -111,9 +111,9 @@ window.Quarto = {
 
 
 
-<section id="pyrifreg" class="level1">
-<h1>pyrifreg</h1>
-<p>A Python package for Recentered Influence Function (RIF) regression analysis. This package provides tools for analyzing distributional effects in econometrics and data science applications.</p>
+<section id="pyrifreg-beta-version-coming-soon" class="level1">
+<h1>pyrifreg [beta version coming soon]</h1>
+<p>A Python package for Recentered Influence Function (RIF) regression analysis. Provides tools for analyzing distributional effects in econometrics and data science applications.</p>
 <section id="installation" class="level2">
 <h2 class="anchored" data-anchor-id="installation">Installation</h2>
 <p>You can install the package using pip:</p>
@@ -123,52 +123,91 @@ window.Quarto = {
 <h2 class="anchored" data-anchor-id="features">Features</h2>
 <ul>
 <li>Implementation of Recentered Influence Function (RIF) regression</li>
-<li>Support for various distributional statistics (mean, quantiles, variance, etc.)</li>
+<li>Support for various distributional statistics (mean, quantiles, variance, gini, etc.)</li>
 <li>Easy-to-use API for regression analysis</li>
 <li>Integration with pandas and scikit-learn</li>
 </ul>
 </section>
 <section id="background" class="level2">
 <h2 class="anchored" data-anchor-id="background">Background</h2>
-<section id="influence-functions" class="level3">
-<h3 class="anchored" data-anchor-id="influence-functions">Influence Functions</h3>
-<p>An <strong>influence function (IF)</strong> characterizes the first‐order effect on a statistical functional <span class="math inline">\(T(F)\)</span> (e.g.&nbsp;a quantile or a variance) of an infinitesimal contamination at point <span class="math inline">\(y\)</span>. Formally, if <span class="math inline">\(F\)</span> is the true distribution and <span class="math inline">\(F_\varepsilon = (1-\varepsilon)F + \varepsilon \delta_y\)</span>, then</p>
+<section id="motivation-from-conditional-to-unconditional-effects" class="level4">
+<h4 class="anchored" data-anchor-id="motivation-from-conditional-to-unconditional-effects">Motivation: From Conditional to Unconditional Effects</h4>
+<p>Most of you are familiar with conditional moments—e.g.</p>
 <p><span class="math display">\[
-\mathrm{IF}(y; T, F)
+\mathbb{E}[Y \mid X = x]
+\]</span></p>
+<p>or conditional quantiles</p>
+<p><span class="math display">\[
+Q_\tau(Y \mid X = x).
+\]</span></p>
+<p>But policy questions often concern how a change in some covariate <span class="math inline">\(X\)</span> shifts the <em>entire</em> (marginal or unconditional) distribution of an outcome <span class="math inline">\(Y\)</span>. For instance:</p>
+<ul>
+<li><strong>Inequality analysis:</strong> How would increasing education change the 90th vs.&nbsp;10th percentile of the wage distribution?</li>
+<li><strong>Welfare evaluation:</strong> What is the impact of a cash transfer on the variance or Gini of consumption?</li>
+</ul>
+<p>Formally, let <span class="math inline">\(F_Y\)</span> be the baseline distribution of <span class="math inline">\(Y\)</span>, and imagine a small intervention on <span class="math inline">\(X\)</span> that perturbs <span class="math inline">\(F_Y\)</span> to <span class="math inline">\(G_Y\)</span>. For a scalar functional <span class="math inline">\(\nu(\cdot)\)</span> (e.g.&nbsp;mean, variance, quantile), define the <em>unconditional policy effect</em>:</p>
+<p><span class="math display">\[
+\Delta\nu \;=\;\nu(G_Y)\;-\;\nu(F_Y).
+\]</span></p>
+<p>Our goal is to estimate how “marginal shifts” in <span class="math inline">\(X\)</span> translate into <span class="math inline">\(\Delta\nu\)</span>.</p>
+<hr>
+</section>
+<section id="influence-functions-if" class="level4">
+<h4 class="anchored" data-anchor-id="influence-functions-if">Influence Functions (IF)</h4>
+<p>An <strong>influence function</strong> captures the <em>first‐order</em> sensitivity of a distributional functional <span class="math inline">\(T(F)\)</span> to an infinitesimal contamination at the point <span class="math inline">\(y\)</span>. Concretely, define</p>
+<p><span class="math display">\[
+F_\varepsilon = (1-\varepsilon)F + \varepsilon\,\delta_y,
+\]</span></p>
+<p>where <span class="math inline">\(\delta_y\)</span> is a point‐mass at <span class="math inline">\(y\)</span>. Then</p>
+<p><span class="math display">\[
+\mathrm{IF}(y;\,T, F)
 \;=\;
-\lim_{\varepsilon\to 0}\frac{T(F_\varepsilon) - T(F)}{\varepsilon}.
+\lim_{\varepsilon\to 0}
+\frac{T(F_\varepsilon) - T(F)}{\varepsilon}.
 \]</span></p>
-<p>Intuitively, <span class="math inline">\(\mathrm{IF}(y)\)</span> tells you how much an observation at <span class="math inline">\(y\)</span> “pulls” the estimator away from its nominal value. Influence functions underpin robust statistics and are central to asymptotic variance calculations.</p>
+<p>IFs tell us “how much does a single observation at <span class="math inline">\(y\)</span> “pull” the estimator of <span class="math inline">\(T\)</span> away from its nominal value”.</p>
+<hr>
 </section>
-<section id="recentered-influence-functions" class="level3">
-<h3 class="anchored" data-anchor-id="recentered-influence-functions">Recentered Influence Functions</h3>
-<p>While <span class="math inline">\(\mathrm{IF}(y)\)</span> has mean zero under <span class="math inline">\(F\)</span>, many applications (e.g.&nbsp;regression) require a variable whose expectation equals the functional of interest. A <strong>recentered influence function (RIF)</strong> adds back the original functional:</p>
+<section id="recentered-influence-functions-rif" class="level4">
+<h4 class="anchored" data-anchor-id="recentered-influence-functions-rif">Recentered Influence Functions (RIF)</h4>
+<p>Since <span class="math inline">\(\mathbb{E}_F[\mathrm{IF}(Y;T,F)] = 0\)</span>, we cannot regress <span class="math inline">\(\mathrm{IF}(Y)\)</span> directly to target <span class="math inline">\(T(F)\)</span>. The <strong>recentered influence function</strong> adds back the functional:</p>
 <p><span class="math display">\[
-\mathrm{RIF}(y; T, F) \;=\; T(F) \;+\; \mathrm{IF}(y; T, F).
+\mathrm{RIF}(y;\,T, F)
+\;=\;
+T(F)\;+\;\mathrm{IF}(y;\,T, F).
 \]</span></p>
-<p>Because <span class="math inline">\(\mathbb{E}_F[\mathrm{RIF}(Y)] = T(F)\)</span>, one can regress the RIF on covariates to study how covariates shift the target functional. This idea was popularized by Firpo, Fortin &amp; Lemieux (2009) for decompositions of wage distributions and quantile regressions.</p>
+<p>Key property:</p>
+<p><span class="math display">\[
+\mathbb{E}_F[\mathrm{RIF}(Y)] \;=\; T(F).
+\]</span></p>
+<p>Thus <span class="math inline">\(\mathrm{RIF}(Y)\)</span> is an <em>unbiased</em> “pseudo‐outcome” for <span class="math inline">\(T(F)\)</span>, which we can now relate to covariates.</p>
+<hr>
 </section>
-<section id="rif-regression" class="level3">
-<h3 class="anchored" data-anchor-id="rif-regression">RIF Regression</h3>
+<section id="rif-regression" class="level4">
+<h4 class="anchored" data-anchor-id="rif-regression">RIF Regression</h4>
 <p>A <strong>RIF regression</strong> proceeds in two steps:</p>
 <ol type="1">
-<li><p><strong>Compute</strong> <span class="math inline">\(T(F)\)</span> and the influence function <span class="math inline">\(\mathrm{IF}(y_i; T, F)\)</span> for each observation <span class="math inline">\(i\)</span>.</p></li>
-<li><p><strong>Form</strong> the recentered outcome</p>
+<li><p><strong>Compute</strong> the plug‐in estimate <span class="math inline">\(T(\widehat F)\)</span> and the influence function <span class="math inline">\(\mathrm{IF}(y_i;T,\widehat F)\)</span> for each <span class="math inline">\(i\)</span>.</p></li>
+<li><p><strong>Form</strong> the RIF outcome <span class="math inline">\(r_i = T(\widehat F) + \mathrm{IF}(y_i;\,T,\widehat F),\)</span> and <strong>estimate</strong> the linear model</p>
 <p><span class="math display">\[
-  r_i = \mathrm{RIF}(y_i; T, F) = T(F) + \mathrm{IF}(y_i; T, F),
-\]</span></p>
-<p>and <strong>fit</strong> a linear (or nonlinear) model</p>
-<p><span class="math display">\[
-  r_i = x_i^\top \beta \;+\;\varepsilon_i.
-\]</span></p>
-<p>Under mild regularity conditions, the estimated <span class="math inline">\(\beta\)</span> captures the marginal association between covariates <span class="math inline">\(X\)</span> and the target functional <span class="math inline">\(T\)</span>, analogously to how OLS coefficients reveal shifts in the conditional mean.</p></li>
+  r_i \;=\; x_i^\top\beta \;+\;\varepsilon_i.
+\]</span></p></li>
 </ol>
-<p><strong>Key features</strong>:</p>
-<ul>
-<li><strong>Flexibility</strong>: Targets arbitrary distributional statistics—means, variances, quantiles, Gini coefficients, etc.</li>
-<li><strong>Interpretability</strong>: Linear–model coefficients have a clear meaning in terms of shifting the population functional.</li>
-<li><strong>Inference</strong>: Standard errors can be obtained via the “sandwich” variance formula, since the RIF regression is semiparametrically efficient for many functionals.</li>
-</ul>
+<p>Under regularity conditions (smoothness of <span class="math inline">\(T\)</span>, overlap in <span class="math inline">\(X\)</span>, etc.), each component <span class="math inline">\(\beta_j\)</span> approximates the <em>marginal effect</em> of <span class="math inline">\(X_j\)</span> on the unconditional functional <span class="math inline">\(T(F_Y)\)</span>.</p>
+<hr>
+</section>
+<section id="unconditional-quantile-regression-uqr" class="level4">
+<h4 class="anchored" data-anchor-id="unconditional-quantile-regression-uqr">Unconditional Quantile Regression (UQR)</h4>
+<p>Unconditional quantile regression is simply RIF regression with <span class="math inline">\(T(F)=Q_\tau(Y)\)</span>. Then:</p>
+<p><span class="math display">\[
+r_i = Q_\tau(Y) \;+\;\frac{\tau - \mathbf{1}\{y_i \le Q_\tau\}}{f_Y(Q_\tau)},
+\]</span></p>
+<p>and regressing <span class="math inline">\(r_i\)</span> on <span class="math inline">\(X\)</span> yields estimates of how a marginal change in each <span class="math inline">\(X_j\)</span> shifts the <span class="math inline">\(\tau\)</span>-th <strong>marginal</strong> quantile of <span class="math inline">\(Y\)</span>. In contrast. conditional QR gives you how <span class="math inline">\(X\)</span> shifts the <em>conditional</em> quantile <span class="math inline">\(Q_\tau(Y\mid X)\)</span>; UQR gives <em>population‐level</em> shifts. Personally, I find quantity this much less interpretable or meaningful.</p>
+<hr>
+</section>
+<section id="inference" class="level4">
+<h4 class="anchored" data-anchor-id="inference">Inference</h4>
+<p>Inference in RIF regression proceeds via a two‐stage procedure—first estimating the target functional <span class="math inline">\(T(\widehat F)\)</span>, any necessary density (e.g.&nbsp;<span class="math inline">\(f_Y(Q_\tau)\)</span>), and the influence values <span class="math inline">\(\mathrm{IF}(y_i)\)</span>, then regressing the recentered outcomes on covariates; because the RIFs are themselves estimated, naïve OLS standard errors are inconsistent and must be adjusted. The package supports bootstrap estimation of standard errors.</p>
 </section>
 </section>
 <section id="quick-start" class="level2">
@@ -182,7 +221,7 @@ window.Quarto = {
 <span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> np.random.randn(<span class="dv">1000</span>)</span>
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Initialize and fit RIF regression</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>rif_reg <span class="op">=</span> RIFRegression(statistic<span class="op">=</span><span class="st">'mean'</span>)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>rif_reg <span class="op">=</span> RIFRegression(statistic<span class="op">=</span><span class="st">'median'</span>)</span>
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>rif_reg.fit(X, y)</span>
 <span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Get regression results</span></span>
@@ -191,14 +230,8 @@ window.Quarto = {
 <span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="co"># For Gini coefficient</span></span>
 <span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>gini_rif <span class="op">=</span> RIFRegression(statistic<span class="op">=</span><span class="st">'gini'</span>)</span>
 <span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="co"># For IQR</span></span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>iqr_rif <span class="op">=</span> RIFRegression(statistic<span class="op">=</span><span class="st">'iqr'</span>)</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co"># For entropy</span></span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>entropy_rif <span class="op">=</span> RIFRegression(statistic<span class="op">=</span><span class="st">'entropy'</span>)</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="co"># For quantiles (as before)</span></span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>median_rif <span class="op">=</span> RIFRegression(statistic<span class="op">=</span><span class="st">'quantile'</span>, q<span class="op">=</span><span class="fl">0.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="co"># For quantiles (as before)</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>median_rif <span class="op">=</span> RIFRegression(statistic<span class="op">=</span><span class="st">'quantile'</span>, q<span class="op">=</span><span class="fl">0.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 <section id="references" class="level2">
 <h2 class="anchored" data-anchor-id="references">References</h2>
@@ -211,6 +244,9 @@ window.Quarto = {
 <section id="license" class="level2">
 <h2 class="anchored" data-anchor-id="license">License</h2>
 <p>This project is licensed under the MIT License - see the <a href="LICENSE">LICENSE</a> file for details.</p>
+</section>
+<section id="changelog" class="level2">
+<h2 class="anchored" data-anchor-id="changelog">Changelog</h2>
 </section>
 </section>
 

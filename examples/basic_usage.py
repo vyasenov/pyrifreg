@@ -4,16 +4,21 @@ Basic usage example of pyrifreg package.
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from pyrifreg import RIFRegression
 
 # Generate sample data
-np.random.seed(42)
-n_samples = 1000
+np.random.seed(1988)
+n = 1000
 
 # Generate features
-X = np.random.randn(n_samples, 2)
+X = np.random.randn(n, 2)
 # Generate target with some non-linear relationship and heteroskedasticity
-y = 2 * X[:, 0] + np.sin(X[:, 1]) + np.random.randn(n_samples) * (0.5 + 0.3 * np.abs(X[:, 0]))
+y = 10 + 2 * X[:, 0] + np.sin(X[:, 1]) + np.random.randn(n) * (0.5 + 0.3 * np.abs(X[:, 0]))
+
+#############
+############# MEAN RIF REGRESSION
+#############
 
 print("=" * 80)
 print("BASIC RIF REGRESSION EXAMPLES")
@@ -25,19 +30,19 @@ mean_rif.fit(X, y)
 print("\nMean RIF Regression Results (HC1 robust standard errors):")
 print(mean_rif.summary())
 
+#############
+############# MEDIAN RIF REGRESSION
+#############
+
 # Create and fit quantile RIF regression (median) with bootstrap
-median_rif = RIFRegression(statistic='quantile', q=0.5, cov_type='bootstrap', bootstrap_reps=500)
+median_rif = RIFRegression(statistic='quantile', q=0.5, cov_type='bootstrap', bootstrap_reps=100)
 median_rif.fit(X, y)
 print("\nMedian RIF Regression Results (Bootstrap standard errors):")
 print(median_rif.summary())
 
-# Get bootstrap information
-bootstrap_info = median_rif.get_bootstrap_info()
-if bootstrap_info:
-    print(f"\nBootstrap Information:")
-    print(f"  Total replications: {bootstrap_info['total_reps']}")
-    print(f"  Successful replications: {bootstrap_info['successful_reps']}")
-    print(f"  Success rate: {bootstrap_info['successful_reps']/bootstrap_info['total_reps']:.1%}")
+#############
+############# VARIANCE RIF REGRESSION
+#############
 
 # Create and fit variance RIF regression with HC3 robust standard errors
 var_rif = RIFRegression(statistic='variance', cov_type='HC3')
@@ -45,19 +50,19 @@ var_rif.fit(X, y)
 print("\nVariance RIF Regression Results (HC3 robust standard errors):")
 print(var_rif.summary())
 
+#############
+############# GINI COEFFICIENT RIF REGRESSION
+#############
+
 # Create and fit Gini coefficient RIF regression with bootstrap (more replications)
-gini_rif = RIFRegression(statistic='gini', cov_type='bootstrap', bootstrap_reps=1000)
+gini_rif = RIFRegression(statistic='gini', cov_type='bootstrap', bootstrap_reps=100)
 gini_rif.fit(X, y)
 print("\nGini Coefficient RIF Regression Results (Bootstrap standard errors):")
 print(gini_rif.summary())
 
-# Get bootstrap information for Gini
-gini_bootstrap_info = gini_rif.get_bootstrap_info()
-if gini_bootstrap_info:
-    print(f"\nGini Bootstrap Information:")
-    print(f"  Total replications: {gini_bootstrap_info['total_reps']}")
-    print(f"  Successful replications: {gini_bootstrap_info['successful_reps']}")
-    print(f"  Success rate: {gini_bootstrap_info['successful_reps']/gini_bootstrap_info['total_reps']:.1%}")
+#############
+############# IQR RIF REGRESSION
+#############
 
 # Create and fit IQR RIF regression with homoskedastic standard errors
 iqr_rif = RIFRegression(statistic='iqr', cov_type='nonrobust')
@@ -65,80 +70,80 @@ iqr_rif.fit(X, y)
 print("\nIQR RIF Regression Results (Homoskedastic standard errors):")
 print(iqr_rif.summary())
 
+#############
+############# ENTROPY RIF REGRESSION
+#############
+
 # Create and fit entropy RIF regression with HC2 robust standard errors
 entropy_rif = RIFRegression(statistic='entropy', cov_type='HC2')
 entropy_rif.fit(X, y)
 print("\nEntropy RIF Regression Results (HC2 robust standard errors):")
 print(entropy_rif.summary())
 
-print("\n" + "=" * 80)
-print("COMPARISON OF DIFFERENT COVARIANCE TYPES")
-print("=" * 80)
+#############
+############# QUANTILE RIF REGRESSION
+#############
 
-# Compare different covariance types for the same statistic
-print("\nComparing different covariance types for Mean RIF regression:")
+# Define deciles
+deciles = np.arange(0.1, 1.0, 0.1)
 
-# Homoskedastic
-mean_homo = RIFRegression(statistic='mean', cov_type='nonrobust')
-mean_homo.fit(X, y)
-print("\n1. Homoskedastic standard errors:")
-print(mean_homo.summary())
+# Store results
+coefficients = []
+std_errors = []
 
-# HC1 (default)
-mean_hc1 = RIFRegression(statistic='mean', cov_type='HC1')
-mean_hc1.fit(X, y)
-print("\n2. HC1 robust standard errors (default):")
-print(mean_hc1.summary())
+print("Running quantile RIF regression at each decile...")
 
-# Bootstrap
-mean_boot = RIFRegression(statistic='mean', cov_type='bootstrap', bootstrap_reps=300)
-mean_boot.fit(X, y)
-print("\n3. Bootstrap standard errors:")
-print(mean_boot.summary())
-
-# Get bootstrap info
-boot_info = mean_boot.get_bootstrap_info()
-if boot_info:
-    print(f"\nBootstrap Details:")
-    print(f"  Successful replications: {boot_info['successful_reps']}/{boot_info['total_reps']}")
-    print(f"  Success rate: {boot_info['successful_reps']/boot_info['total_reps']:.1%}")
-
-print("\n" + "=" * 80)
-print("BOOTSTRAP WITH DIFFERENT REPLICATION COUNTS")
-print("=" * 80)
-
-# Demonstrate bootstrap with different replication counts
-replication_counts = [100, 500, 1000]
-
-for reps in replication_counts:
-    print(f"\nBootstrap with {reps} replications:")
+# Run quantile RIF regression at each decile
+for q in deciles:
+    print(f"  Processing {q*100:.0f}th percentile...")
+    
     try:
-        boot_model = RIFRegression(statistic='quantile', q=0.75, 
-                                  cov_type='bootstrap', bootstrap_reps=reps)
-        boot_model.fit(X, y)
+        # Fit quantile RIF regression
+        rif_model = RIFRegression(statistic='quantile', q=q, cov_type='HC1')
+        rif_model.fit(X, y)
         
-        # Get bootstrap info
-        boot_info = boot_model.get_bootstrap_info()
-        if boot_info:
-            success_rate = boot_info['successful_reps'] / boot_info['total_reps']
-            print(f"  Success rate: {success_rate:.1%}")
-            print(f"  Successful replications: {boot_info['successful_reps']}")
+        # Extract X1 coefficient and standard error (skip intercept)
+        coef_x1 = rif_model.results.params[1]
+        se_x1 = rif_model.results.bse[1]
         
-        # Show coefficient estimates
-        params = boot_model.results.params
-        print(f"  Intercept: {params[0]:.4f}")
-        print(f"  X1 coefficient: {params[1]:.4f}")
-        print(f"  X2 coefficient: {params[2]:.4f}")
+        coefficients.append(coef_x1)
+        std_errors.append(se_x1)
         
     except Exception as e:
-        print(f"  Error: {str(e)}")
+        print(f"    Error at q={q}: {str(e)}")
+        coefficients.append(np.nan)
+        std_errors.append(np.nan)
 
-print("\n" + "=" * 80)
-print("SUMMARY")
-print("=" * 80)
-print("This example demonstrates:")
-print("1. Different RIF statistics (mean, quantile, variance, gini, iqr, entropy)")
-print("2. Various covariance types (nonrobust, HC1, HC2, HC3, bootstrap)")
-print("3. Bootstrap with different replication counts")
-print("4. How to access bootstrap information")
-print("5. Comparison of standard error estimates across methods")
+# Create the plot
+plt.figure(figsize=(10, 6))
+
+# Remove NaN values
+mask = ~np.isnan(coefficients)
+x_clean = deciles[mask]
+coefs_clean = np.array(coefficients)[mask]
+ses_clean = np.array(std_errors)[mask]
+
+if len(x_clean) > 0:
+    # Plot coefficient line
+    plt.plot(x_clean, coefs_clean, 'o-', color='#1f77b4', linewidth=2, markersize=6, label='X1 Coefficient')
+    
+    # Plot confidence intervals (95% CI)
+    ci_95 = 1.96 * ses_clean
+    plt.fill_between(x_clean, coefs_clean - ci_95, coefs_clean + ci_95, 
+                    alpha=0.3, color='#1f77b4', label='95% CI')
+
+# Add horizontal line at zero for reference
+plt.axhline(y=2, color='black', linestyle='--', alpha=0.5, linewidth=1)
+
+# Customize plot
+plt.xlabel('Quantile', fontsize=12)
+plt.ylabel('X1 Coefficient Value', fontsize=12)
+plt.title('X1 Coefficient Across Quantiles', fontsize=14, fontweight='bold')
+plt.legend()
+plt.grid(True, alpha=0.3)
+
+# Set x-axis ticks
+plt.xticks(deciles, [f'{d:.1f}' for d in deciles])
+
+plt.tight_layout()
+plt.show()

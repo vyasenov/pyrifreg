@@ -43,25 +43,7 @@ class RIFRegression(BaseEstimator, RegressorMixin):
     """
     
     def __init__(self, statistic='mean', q=None, cov_type='HC1', bootstrap_reps=1000):
-        # Validate statistic parameter
-        if not isinstance(statistic, str):
-            raise TypeError("statistic must be a string")
-        
-        valid_statistics = ['mean', 'quantile', 'variance', 'gini', 'iqr', 'entropy']
-        if statistic not in valid_statistics:
-            raise ValueError(f"statistic must be one of {valid_statistics}, got {statistic}")
-        
-        # Validate q parameter for quantile statistic
-        if statistic == 'quantile':
-            if q is None:
-                raise ValueError("Quantile level 'q' must be specified for quantile RIF")
-            if not isinstance(q, (int, float)):
-                raise TypeError("q must be a numeric value")
-            if not 0 < q < 1:
-                raise ValueError("q must be between 0 and 1")
-        elif q is not None:
-            raise ValueError("q parameter should only be specified for quantile statistic")
-        
+
         # Validate cov_type parameter
         if not isinstance(cov_type, str):
             raise TypeError("cov_type must be a string")
@@ -172,9 +154,9 @@ class RIFRegression(BaseEstimator, RegressorMixin):
         
         Parameters
         ----------
-        X : array-like of shape (n_samples, n_features)
+        X : array-like of shape (n_samples, n_features) or pandas DataFrame
             Training data
-        y : array-like of shape (n_samples,)
+        y : array-like of shape (n_samples,) or pandas Series
             Target values
             
         Returns
@@ -182,9 +164,15 @@ class RIFRegression(BaseEstimator, RegressorMixin):
         self : object
             Returns self.
         """
-        # Input validation
+        # Input validation for X and y
         if X is None or y is None:
             raise ValueError("X and y cannot be None")
+        
+        # Convert pandas inputs to numpy arrays if needed
+        if hasattr(X, 'to_numpy'):
+            X = X.to_numpy()
+        if hasattr(y, 'to_numpy'):
+            y = y.to_numpy()
         
         # Convert to numpy arrays
         try:
@@ -193,38 +181,32 @@ class RIFRegression(BaseEstimator, RegressorMixin):
         except Exception as e:
             raise TypeError(f"Failed to convert inputs to numpy arrays: {str(e)}")
         
-        # Check dimensions
+        # Check X dimensions and reshape if needed
         if X.ndim == 1:
             X = X.reshape(-1, 1)
         elif X.ndim != 2:
             raise ValueError(f"X must be 1D or 2D array, got {X.ndim}D")
         
-        if y.ndim != 1:
-            raise ValueError(f"y must be 1D array, got {y.ndim}D")
-        
-        # Check shapes
+        # Check shapes compatibility
         if X.shape[0] != y.shape[0]:
-            raise ValueError(f"X and y must have the same number of samples. "
-                           f"X has {X.shape[0]} samples, y has {y.shape[0]} samples")
+            raise ValueError(f"X and y must have the same number of observations. "
+                           f"X has {X.shape[0]} observations, y has {y.shape[0]} observations")
         
         if X.shape[0] == 0:
-            raise ValueError("X and y cannot be empty")
-        
-        # Check for NaN or infinite values
-        if np.any(np.isnan(X)) or np.any(np.isinf(X)):
-            raise ValueError("X contains NaN or infinite values")
-        
-        if np.any(np.isnan(y)) or np.any(np.isinf(y)):
-            raise ValueError("y contains NaN or infinite values")
-        
-        # Check for sufficient data
-        if X.shape[0] < 2:
-            raise ValueError("At least 2 samples are required for regression")
+            raise ValueError("X cannot be empty")
         
         if X.shape[1] == 0:
             raise ValueError("X must have at least one feature")
         
-        # Get RIF generator and compute RIF
+        # Check for NaN or infinite values in X
+        if np.any(np.isnan(X)) or np.any(np.isinf(X)):
+            raise ValueError("X contains NaN or infinite values")
+        
+        # Check for sufficient data
+        if X.shape[0] < 2:
+            raise ValueError("At least 2 observations are required for regression")
+        
+        # Get RIF generator and compute RIF (y validation happens in RIF generators)
         try:
             self.rif_generator = self._get_rif_generator()
             rif = self.rif_generator.compute(y)
@@ -265,6 +247,66 @@ class RIFRegression(BaseEstimator, RegressorMixin):
             raise RuntimeError(f"Failed to fit regression model: {str(e)}")
         
         return self
+    
+    def predict(self, X):
+        """
+        Predict using the fitted RIF regression model.
+        
+        For RIF regression, this returns the fitted values (X * beta) from the
+        regression of RIF values on the covariates. This is not a traditional
+        prediction in the machine learning sense, but rather the fitted values
+        from the RIF regression.
+        
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features) or pandas DataFrame
+            Samples to predict for
+            
+        Returns
+        -------
+        y_pred : array-like of shape (n_samples,)
+            Predicted values (fitted values from RIF regression)
+        """
+        if self.results is None:
+            raise ValueError("Model has not been fitted yet. Call fit() first.")
+        
+        # Input validation
+        if X is None:
+            raise ValueError("X cannot be None")
+        
+        # Convert pandas inputs to numpy arrays if needed
+        if hasattr(X, 'to_numpy'):
+            X = X.to_numpy()
+        
+        # Convert to numpy array
+        try:
+            X = np.asarray(X)
+        except Exception as e:
+            raise TypeError(f"Failed to convert X to numpy array: {str(e)}")
+        
+        # Check dimensions and reshape if needed
+        if X.ndim == 1:
+            X = X.reshape(-1, 1)
+        elif X.ndim != 2:
+            raise ValueError(f"X must be 1D or 2D array, got {X.ndim}D")
+        
+        # Check for NaN or infinite values
+        if np.any(np.isnan(X)) or np.any(np.isinf(X)):
+            raise ValueError("X contains NaN or infinite values")
+        
+        # Add constant term to match the fitted model
+        try:
+            X = add_constant(X)
+        except Exception as e:
+            raise RuntimeError(f"Failed to add constant term: {str(e)}")
+        
+        # Check that number of features matches the fitted model
+        if X.shape[1] != len(self.results.params):
+            raise ValueError(f"X has {X.shape[1]} features (including constant), "
+                           f"but model was fitted with {len(self.results.params)} parameters")
+        
+        # Return fitted values
+        return self.results.fittedvalues[:len(X)]
     
     def get_bootstrap_info(self):
         """

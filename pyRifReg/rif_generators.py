@@ -24,9 +24,6 @@ class RIFGenerator:
         if y.ndim != 1:
             raise ValueError(f"Input data must be 1D array, got {y.ndim}D")
         
-        if len(y) == 0:
-            raise ValueError("Input data cannot be empty")
-        
         if np.any(np.isnan(y)) or np.any(np.isinf(y)):
             raise ValueError("Input data contains NaN or infinite values")
         
@@ -107,9 +104,6 @@ class QuantileRIF(RIFGenerator):
         if y.ndim != 1:
             raise ValueError(f"Input data must be 1D array, got {y.ndim}D")
         
-        if len(y) == 0:
-            raise ValueError("Input data cannot be empty")
-        
         if np.any(np.isnan(y)) or np.any(np.isinf(y)):
             raise ValueError("Input data contains NaN or infinite values")
         
@@ -171,9 +165,6 @@ class GiniRIF(RIFGenerator):
         if y.ndim != 1:
             raise ValueError(f"Input data must be 1D array, got {y.ndim}D")
         
-        if len(y) == 0:
-            raise ValueError("Input data cannot be empty")
-        
         if np.any(np.isnan(y)) or np.any(np.isinf(y)):
             raise ValueError("Input data contains NaN or infinite values")
         
@@ -220,9 +211,6 @@ class IQRRIF(RIFGenerator):
         if y.ndim != 1:
             raise ValueError(f"Input data must be 1D array, got {y.ndim}D")
         
-        if len(y) == 0:
-            raise ValueError("Input data cannot be empty")
-        
         if np.any(np.isnan(y)) or np.any(np.isinf(y)):
             raise ValueError("Input data contains NaN or infinite values")
         
@@ -260,9 +248,6 @@ class EntropyRIF(RIFGenerator):
         
         if y.ndim != 1:
             raise ValueError(f"Input data must be 1D array, got {y.ndim}D")
-        
-        if len(y) == 0:
-            raise ValueError("Input data cannot be empty")
         
         if np.any(np.isnan(y)) or np.any(np.isinf(y)):
             raise ValueError("Input data contains NaN or infinite values")
