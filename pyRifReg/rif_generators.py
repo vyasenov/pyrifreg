@@ -6,7 +6,6 @@ import numpy as np
 from scipy import stats
 from typing import Union, Optional, Callable
 
-
 class RIFGenerator:
     """Base class for RIF generators."""
     

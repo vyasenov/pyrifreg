@@ -146,40 +146,25 @@ Q_\tau(Y \mid X = x).
 <li>Welfare evaluation: What is the impact of a cash transfer on the variance or Gini of consumption?</li>
 </ul>
 <p>Formally, let <span class="math inline">\(F_Y\)</span> be the baseline distribution of <span class="math inline">\(Y\)</span>, and imagine a small intervention on <span class="math inline">\(X\)</span> that perturbs <span class="math inline">\(F_Y\)</span> to <span class="math inline">\(G_Y\)</span>. For a scalar functional <span class="math inline">\(\nu(\cdot)\)</span> (e.g.&nbsp;mean, variance, quantile), define the <em>unconditional effect</em>:</p>
-<p><span class="math display">\[
-\Delta\nu =\nu(G_Y)-\nu(F_Y).
-\]</span></p>
+<p><span class="math display">\[\Delta\nu =\nu(G_Y)-\nu(F_Y).\]</span></p>
 <p>Our goal is to estimate how “marginal shifts” in <span class="math inline">\(X\)</span> translate into <span class="math inline">\(\Delta\nu\)</span>.</p>
 <hr>
 </section>
 <section id="influence-functions-if" class="level4">
 <h4 class="anchored" data-anchor-id="influence-functions-if">Influence Functions (IF)</h4>
 <p>An influence function captures the <em>first‐order</em> sensitivity of a distributional functional <span class="math inline">\(T(F)\)</span> to an infinitesimal contamination at the point <span class="math inline">\(y\)</span>. Concretely, define</p>
-<p><span class="math display">\[
-F_\varepsilon = (1-\varepsilon)F + \varepsilon\,\delta_y,
-\]</span></p>
+<p><span class="math display">\[F_\varepsilon = (1-\varepsilon)F + \varepsilon\,\delta_y,\]</span></p>
 <p>where <span class="math inline">\(\delta_y\)</span> is a point‐mass at <span class="math inline">\(y\)</span>. Then</p>
-<p><span class="math display">\[
-\mathrm{IF}(y,T, F)
-=
-\lim_{\varepsilon\to 0}
-\frac{T(F_\varepsilon) - T(F)}{\varepsilon}.
-\]</span></p>
+<p><span class="math display">\[\mathrm{IF}(y,T, F)=\lim_{\varepsilon\to 0}\frac{T(F_\varepsilon) - T(F)}{\varepsilon}.\]</span></p>
 <p>IFs tell us “how much does a single observation at <span class="math inline">\(y\)</span> “pull” the estimator of <span class="math inline">\(T\)</span> away from its nominal value”.</p>
 <hr>
 </section>
 <section id="recentered-influence-functions-rif" class="level4">
 <h4 class="anchored" data-anchor-id="recentered-influence-functions-rif">Recentered Influence Functions (RIF)</h4>
 <p>Since <span class="math inline">\(\mathbb{E}[\mathrm{IF}(Y;T,F)] = 0\)</span>, we cannot regress <span class="math inline">\(\mathrm{IF}(Y)\)</span> directly to target <span class="math inline">\(T(F)\)</span>. The recentered influence function adds back the functional itself:</p>
-<p><span class="math display">\[
-\mathrm{RIF}(y,T, F)
-=
-T(F)+\mathrm{IF}(y,T, F).
-\]</span></p>
+<p><span class="math display">\[\mathrm{RIF}(y,T, F)=T(F)+\mathrm{IF}(y,T, F).\]</span></p>
 <p>Its key property is:</p>
-<p><span class="math display">\[
-\mathbb{E}[\mathrm{RIF}(Y)] = T(F).
-\]</span></p>
+<p><span class="math display">\[\mathbb{E}[\mathrm{RIF}(Y)] = T(F).\]</span></p>
 <p>Thus <span class="math inline">\(\mathrm{RIF}(Y)\)</span> is an <em>unbiased</em> “pseudo‐outcome” for <span class="math inline">\(T(F)\)</span>, which we can now relate to covariates.</p>
 <hr>
 </section>
@@ -189,9 +174,7 @@ T(F)+\mathrm{IF}(y,T, F).
 <ol type="1">
 <li><p>Compute the plug‐in estimate <span class="math inline">\(T(\widehat F)\)</span> and the influence function <span class="math inline">\(\mathrm{IF}(y_i;T,\widehat F)\)</span> for each <span class="math inline">\(i\)</span>.</p></li>
 <li><p>Form the RIF outcome <span class="math inline">\(r_i = T(\widehat F) + \mathrm{IF}(y_i,T,\widehat F),\)</span> and estimate the linear model</p>
-<p><span class="math display">\[
-  r_i = x_i^\top\beta +\varepsilon_i.
-\]</span></p></li>
+<p><span class="math display">\[r_i = x_i^\top\beta +\varepsilon_i.\]</span></p></li>
 </ol>
 <p>Under regularity conditions (smoothness of <span class="math inline">\(T\)</span>, overlap in <span class="math inline">\(X\)</span>, etc.), each component <span class="math inline">\(\beta_j\)</span> approximates the <em>marginal effect</em> of <span class="math inline">\(X_j\)</span> on the unconditional functional <span class="math inline">\(T(F_Y)\)</span>.</p>
 <hr>

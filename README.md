@@ -40,9 +40,7 @@ But policy questions often concern how a change in some covariate $X$ shifts the
 
 Formally, let $F_Y$ be the baseline distribution of $Y$, and imagine a small intervention on $X$ that perturbs $F_Y$ to $G_Y$.  For a scalar functional $\nu(\cdot)$ (e.g. mean, variance, quantile), define the *unconditional effect*:
 
-$$
-\Delta\nu =\nu(G_Y)-\nu(F_Y).
-$$
+$$\Delta\nu =\nu(G_Y)-\nu(F_Y).$$
 
 Our goal is to estimate how “marginal shifts” in $X$ translate into $\Delta\nu$.
 
@@ -52,18 +50,11 @@ Our goal is to estimate how “marginal shifts” in $X$ translate into $\Delta\
 
 An influence function captures the *first‐order* sensitivity of a distributional functional $T(F)$ to an infinitesimal contamination at the point $y$.  Concretely, define
 
-$$
-F_\varepsilon = (1-\varepsilon)F + \varepsilon\,\delta_y,
-$$
+$$F_\varepsilon = (1-\varepsilon)F + \varepsilon\,\delta_y,$$
 
-where $\delta_y$ is a point‐mass at $y$.  Then
+where $\delta_y$ is a point‐mass at $y$. Then
 
-$$
-\mathrm{IF}(y,T, F)
-=
-\lim_{\varepsilon\to 0}
-\frac{T(F_\varepsilon) - T(F)}{\varepsilon}.
-$$
+$$\mathrm{IF}(y,T, F)=\lim_{\varepsilon\to 0}\frac{T(F_\varepsilon) - T(F)}{\varepsilon}.$$
 
 IFs tell us "how much does a single observation at $y$ “pull” the estimator of $T$ away from its nominal value".
 
@@ -73,17 +64,11 @@ IFs tell us "how much does a single observation at $y$ “pull” the estimator 
 
 Since $\mathbb{E}[\mathrm{IF}(Y;T,F)] = 0$, we cannot regress $\mathrm{IF}(Y)$ directly to target $T(F)$.  The recentered influence function adds back the functional itself:
 
-$$
-\mathrm{RIF}(y,T, F)
-=
-T(F)+\mathrm{IF}(y,T, F).
-$$
+$$\mathrm{RIF}(y,T, F)=T(F)+\mathrm{IF}(y,T, F).$$
 
 Its key property is:
 
-$$
-\mathbb{E}[\mathrm{RIF}(Y)] = T(F).
-$$
+$$\mathbb{E}[\mathrm{RIF}(Y)] = T(F).$$
 
 Thus $\mathrm{RIF}(Y)$ is an *unbiased* “pseudo‐outcome” for $T(F)$, which we can now relate to covariates.
 
@@ -96,9 +81,7 @@ A RIF regression proceeds in two steps:
 1. Compute  the plug‐in estimate $T(\widehat F)$ and the influence function $\mathrm{IF}(y_i;T,\widehat F)$ for each $i$.
 2. Form the RIF outcome $r_i = T(\widehat F) + \mathrm{IF}(y_i,T,\widehat F),$ and estimate the linear model
 
-   $$
-     r_i = x_i^\top\beta +\varepsilon_i.
-   $$
+   $$r_i = x_i^\top\beta +\varepsilon_i.$$
 
 Under regularity conditions (smoothness of $T$, overlap in $X$, etc.), each component $\beta_j$ approximates the *marginal effect* of $X_j$ on the unconditional functional $T(F_Y)$.
 
