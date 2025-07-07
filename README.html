@@ -113,7 +113,7 @@ window.Quarto = {
 
 <section id="pyrifreg" class="level1">
 <h1>pyrifreg</h1>
-<p>A Python package for Recentered Influence Function (RIF) regression analysis. Provides tools for analyzing distributional effects in econometrics and data science applications. Bridges the gap between Python developers and econometricians to enable deeper unconditional distributional analysis.</p>
+<p>A Python package for Recentered Influence Function (RIF) regression analysis. Provides tools for analyzing distributional effects in econometrics and data science applications.</p>
 <section id="installation" class="level2">
 <h2 class="anchored" data-anchor-id="installation">Installation</h2>
 <p>You can install the package using pip:</p>
@@ -127,72 +127,6 @@ window.Quarto = {
 <li>Easy-to-use API for regression analysis</li>
 <li>Integration with pandas and scikit-learn</li>
 </ul>
-</section>
-<section id="background" class="level2">
-<h2 class="anchored" data-anchor-id="background">Background</h2>
-<section id="motivation-from-conditional-to-unconditional-effects" class="level4">
-<h4 class="anchored" data-anchor-id="motivation-from-conditional-to-unconditional-effects">Motivation: From Conditional to Unconditional Effects</h4>
-<p>Most of you are familiar with conditional moments—e.g.</p>
-<p><span class="math display">\[
-\mathbb{E}[Y \mid X = x]
-\]</span></p>
-<p>or conditional quantiles</p>
-<p><span class="math display">\[
-Q_\tau(Y \mid X = x).
-\]</span></p>
-<p>But policy questions often concern how a change in some covariate <span class="math inline">\(X\)</span> shifts the <em>entire</em> (marginal or unconditional) distribution of an outcome <span class="math inline">\(Y\)</span>. For instance:</p>
-<ul>
-<li>Inequality analysis: How would increasing education change the 90th vs.&nbsp;10th percentile of the wage distribution?</li>
-<li>Welfare evaluation: What is the impact of a cash transfer on the variance or Gini of consumption?</li>
-</ul>
-<p>Formally, let <span class="math inline">\(F_Y\)</span> be the baseline distribution of <span class="math inline">\(Y\)</span>, and imagine a small intervention on <span class="math inline">\(X\)</span> that perturbs <span class="math inline">\(F_Y\)</span> to <span class="math inline">\(G_Y\)</span>. For a scalar functional <span class="math inline">\(\nu(\cdot)\)</span> (e.g.&nbsp;mean, variance, quantile), define the <em>unconditional effect</em>:</p>
-<p><span class="math display">\[\Delta\nu =\nu(G_Y)-\nu(F_Y).\]</span></p>
-<p>Our goal is to estimate how “marginal shifts” in <span class="math inline">\(X\)</span> translate into <span class="math inline">\(\Delta\nu\)</span>.</p>
-<hr>
-</section>
-<section id="influence-functions-if" class="level4">
-<h4 class="anchored" data-anchor-id="influence-functions-if">Influence Functions (IF)</h4>
-<p>An influence function captures the <em>first‐order</em> sensitivity of a distributional functional <span class="math inline">\(T(F)\)</span> to an infinitesimal contamination at the point <span class="math inline">\(y\)</span>. Concretely, define</p>
-<p><span class="math display">\[F_\varepsilon = (1-\varepsilon)F + \varepsilon\,\delta_y,\]</span></p>
-<p>where <span class="math inline">\(\delta_y\)</span> is a point‐mass at <span class="math inline">\(y\)</span>. Then</p>
-<p><span class="math display">\[\mathrm{IF}(y,T, F)=\lim_{\varepsilon\to 0}\frac{T(F_\varepsilon) - T(F)}{\varepsilon}.\]</span></p>
-<p>IFs tell us “how much does a single observation at <span class="math inline">\(y\)</span> “pull” the estimator of <span class="math inline">\(T\)</span> away from its nominal value”.</p>
-<hr>
-</section>
-<section id="recentered-influence-functions-rif" class="level4">
-<h4 class="anchored" data-anchor-id="recentered-influence-functions-rif">Recentered Influence Functions (RIF)</h4>
-<p>Since <span class="math inline">\(\mathbb{E}[\mathrm{IF}(Y;T,F)] = 0\)</span>, we cannot regress <span class="math inline">\(\mathrm{IF}(Y)\)</span> directly to target <span class="math inline">\(T(F)\)</span>. The recentered influence function adds back the functional itself:</p>
-<p><span class="math display">\[\mathrm{RIF}(y,T, F)=T(F)+\mathrm{IF}(y,T, F).\]</span></p>
-<p>Its key property is:</p>
-<p><span class="math display">\[\mathbb{E}[\mathrm{RIF}(Y)] = T(F).\]</span></p>
-<p>Thus <span class="math inline">\(\mathrm{RIF}(Y)\)</span> is an <em>unbiased</em> “pseudo‐outcome” for <span class="math inline">\(T(F)\)</span>, which we can now relate to covariates.</p>
-<hr>
-</section>
-<section id="rif-regression" class="level4">
-<h4 class="anchored" data-anchor-id="rif-regression">RIF Regression</h4>
-<p>A RIF regression proceeds in two steps:</p>
-<ol type="1">
-<li><p>Compute the plug‐in estimate <span class="math inline">\(T(\widehat F)\)</span> and the influence function <span class="math inline">\(\mathrm{IF}(y_i;T,\widehat F)\)</span> for each <span class="math inline">\(i\)</span>.</p></li>
-<li><p>Form the RIF outcome <span class="math inline">\(r_i = T(\widehat F) + \mathrm{IF}(y_i,T,\widehat F),\)</span> and estimate the linear model</p>
-<p><span class="math display">\[r_i = x_i^\top\beta +\varepsilon_i.\]</span></p></li>
-</ol>
-<p>Under regularity conditions (smoothness of <span class="math inline">\(T\)</span>, overlap in <span class="math inline">\(X\)</span>, etc.), each component <span class="math inline">\(\beta_j\)</span> approximates the <em>marginal effect</em> of <span class="math inline">\(X_j\)</span> on the unconditional functional <span class="math inline">\(T(F_Y)\)</span>.</p>
-<hr>
-</section>
-<section id="unconditional-quantile-regression-uqr" class="level4">
-<h4 class="anchored" data-anchor-id="unconditional-quantile-regression-uqr">Unconditional Quantile Regression (UQR)</h4>
-<p>Unconditional quantile regression is simply RIF regression with <span class="math inline">\(T(F)=Q_\tau(Y)\)</span>. Then:</p>
-<p><span class="math display">\[
-r_i = Q_\tau(Y) +\frac{\tau - \mathbf{1}\{y_i \le Q_\tau\}}{f_Y(Q_\tau)},
-\]</span></p>
-<p>and regressing <span class="math inline">\(r_i\)</span> on <span class="math inline">\(X\)</span> yields estimates of how a marginal change in each <span class="math inline">\(X_j\)</span> shifts the <span class="math inline">\(\tau\)</span>-th <em>marginal</em> quantile of <span class="math inline">\(Y\)</span>.</p>
-<p>Traditional conditional quantile regression (Koenker &amp; Bassett, 1978) estimates how covariates <span class="math inline">\(X\)</span> shift the conditional quantile <span class="math inline">\(Q_\tau(Y\mid X)\)</span>, which effectively amounts to examining the unconditional distribution of the residual <span class="math inline">\(\varepsilon\)</span>. By contrast, unconditional quantile regression (UQR) assesses how marginal changes in <span class="math inline">\(X\)</span> directly alter the overall distribution of <span class="math inline">\(Y\)</span>. Personally, I find the conditional approach far less interpretable and meaningful.</p>
-<hr>
-</section>
-<section id="inference" class="level4">
-<h4 class="anchored" data-anchor-id="inference">Inference</h4>
-<p>Inference in RIF regression proceeds via a two‐stage procedure. First, estimating the target functional <span class="math inline">\(T(\widehat F)\)</span>, any necessary density (e.g.&nbsp;<span class="math inline">\(f_Y(Q_\tau)\)</span>), and the influence values <span class="math inline">\(\mathrm{IF}(y_i)\)</span>. Next, regressing the recentered outcomes on covariates. Because the RIFs are themselves estimated, naïve OLS standard errors are inconsistent and must be adjusted. The package supports bootstrap estimation of standard errors.</p>
-</section>
 </section>
 <section id="quick-start" class="level2">
 <h2 class="anchored" data-anchor-id="quick-start">Quick Start</h2>
@@ -213,6 +147,90 @@ r_i = Q_\tau(Y) +\frac{\tau - \mathbf{1}\{y_i \le Q_\tau\}}{f_Y(Q_\tau)},
 <span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(results)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>You can find more examples in <a href="https://github.com/vyasenov/pyrifreg/blob/main/example.py">example.py</a>.</p>
 </section>
+<section id="examples" class="level2">
+<h2 class="anchored" data-anchor-id="examples">Examples</h2>
+<p>See the <code>examples/</code> directory for detailed examples including:</p>
+</section>
+<section id="background" class="level2">
+<h2 class="anchored" data-anchor-id="background">Background</h2>
+<section id="from-conditional-to-unconditional-effects" class="level3">
+<h3 class="anchored" data-anchor-id="from-conditional-to-unconditional-effects">From Conditional to Unconditional Effects</h3>
+<p>Many regression models focus on <em>conditional</em> statistics like:</p>
+<p><span class="math display">\[
+\mathbb{E}[Y \mid X = x]
+\]</span></p>
+<p>or conditional quantiles</p>
+<p><span class="math display">\[
+Q_\tau(Y \mid X = x).
+\]</span></p>
+<p>But policy questions often require understanding how a variable like education or income influences the <em>entire</em> distribution of an outcome, not just its mean or conditional parts. For example:</p>
+<ul>
+<li>How would expanding access to college change the 90th percentile of the wage distribution?</li>
+<li>What is the effect of a tax policy on income inequality or the Gini index?</li>
+</ul>
+<p>Instead of looking at changes within subgroups (conditional on <span class="math inline">\(X\)</span>), RIF regression helps us estimate how changes in covariates shift the <em>overall</em>, or <em>unconditional</em>, distribution of <span class="math inline">\(Y\)</span>.</p>
+<p>Let <span class="math inline">\(F_Y\)</span> be the original distribution of <span class="math inline">\(Y\)</span>, and suppose an intervention shifts it to <span class="math inline">\(G_Y\)</span>. For a statistic <span class="math inline">\(\nu\)</span> (like the mean, a quantile, or variance), we want to estimate:</p>
+<p><span class="math display">\[
+\Delta\nu = \nu(G_Y) - \nu(F_Y),
+\]</span></p>
+<p>i.e., how that statistic changes when the distribution shifts. RIF regression provides a way to estimate how different variables contribute to such shifts.</p>
+</section>
+<section id="influence-functions-if" class="level3">
+<h3 class="anchored" data-anchor-id="influence-functions-if">Influence Functions (IF)</h3>
+<p>The influence function measures how sensitive a statistic is to a small change in the data. More precisely, it tells us how much an individual observation <span class="math inline">\(y\)</span> influences a statistic like the mean or a quantile.</p>
+<p>Formally, imagine a slightly perturbed distribution:</p>
+<p><span class="math display">\[
+F_\varepsilon = (1 - \varepsilon) F + \varepsilon\, \delta_y,
+\]</span></p>
+<p>where <span class="math inline">\(\delta_y\)</span> is a point mass at <span class="math inline">\(y\)</span>. Then the influence function is:</p>
+<p><span class="math display">\[
+\mathrm{IF}(y; T, F) = \lim_{\varepsilon \to 0} \frac{T(F_\varepsilon) - T(F)}{\varepsilon}.
+\]</span></p>
+<p>This gives us a first-order approximation of how <span class="math inline">\(y\)</span> affects the statistic <span class="math inline">\(T\)</span>.</p>
+</section>
+<section id="recentered-influence-functions-rif" class="level3">
+<h3 class="anchored" data-anchor-id="recentered-influence-functions-rif">Recentered Influence Functions (RIF)</h3>
+<p>Because the average of the influence function is always zero, we can’t use it directly in a regression. To fix this, we “recenter” it by adding the original statistic back:</p>
+<p><span class="math display">\[
+\mathrm{RIF}(y; T, F) = T(F) + \mathrm{IF}(y; T, F).
+\]</span></p>
+<p>Now, the expected value of the RIF is equal to the statistic itself:</p>
+<p><span class="math display">\[
+\mathbb{E}[\mathrm{RIF}(Y)] = T(F).
+\]</span></p>
+<p>This makes it a useful outcome variable for regression, allowing us to relate changes in the statistic <span class="math inline">\(T\)</span> to changes in covariates.</p>
+</section>
+<section id="rif-regression" class="level3">
+<h3 class="anchored" data-anchor-id="rif-regression">RIF Regression</h3>
+<p>RIF regression works in two main steps:</p>
+<ol type="1">
+<li><p>Estimate the target statistic <span class="math inline">\(T(F)\)</span> (e.g.&nbsp;median or Gini) and compute the influence value for each observation.</p></li>
+<li><p>Construct the RIF pseudo-outcome for each data point and regress it on <span class="math inline">\(X\)</span> using linear regression:</p>
+<p><span class="math display">\[
+r_i = x_i^\top \beta + \varepsilon_i.
+\]</span></p></li>
+</ol>
+<p>The regression coefficients <span class="math inline">\(\beta_j\)</span> can then be interpreted as the marginal effect of each <span class="math inline">\(X_j\)</span> on the statistic of interest.</p>
+</section>
+<section id="unconditional-quantile-regression-uqr" class="level3">
+<h3 class="anchored" data-anchor-id="unconditional-quantile-regression-uqr">Unconditional Quantile Regression (UQR)</h3>
+<p>UQR is a special case of RIF regression, where the statistic of interest is an unconditional quantile <span class="math inline">\(Q_\tau(Y)\)</span>. For each observation <span class="math inline">\(y_i\)</span>, we compute:</p>
+<p><span class="math display">\[
+r_i = Q_\tau(Y) + \frac{\tau - \mathbf{1}\{y_i \le Q_\tau\}}{f_Y(Q_\tau)},
+\]</span></p>
+<p>where <span class="math inline">\(f_Y(Q_\tau)\)</span> is the density at the <span class="math inline">\(\tau\)</span>-th quantile. Regressing <span class="math inline">\(r_i\)</span> on <span class="math inline">\(X\)</span> tells us how each covariate shifts the <span class="math inline">\(\tau\)</span>-th quantile of the overall outcome distribution.</p>
+<p>This is in contrast to conditional quantile regression (Koenker &amp; Bassett, 1978), which examines changes in <span class="math inline">\(Q_\tau(Y \mid X)\)</span>—a different and often less intuitive object for understanding broad policy effects.</p>
+</section>
+<section id="confidence-intervals" class="level3">
+<h3 class="anchored" data-anchor-id="confidence-intervals">Confidence Intervals</h3>
+<p>Since RIFs are estimated in a first step before regression, the usual OLS standard errors are biased. To correct this, inference proceeds in two stages:</p>
+<ol type="1">
+<li>Estimate the statistic <span class="math inline">\(T\)</span>, the influence function, and any needed density estimates.</li>
+<li>Run the regression and compute corrected standard errors using bootstrap.</li>
+</ol>
+<p>The package includes support for bootstrap inference out of the box.</p>
+</section>
+</section>
 <section id="references" class="level2">
 <h2 class="anchored" data-anchor-id="references">References</h2>
 <ul>
@@ -225,6 +243,17 @@ r_i = Q_\tau(Y) +\frac{\tau - \mathbf{1}\{y_i \le Q_\tau\}}{f_Y(Q_\tau)},
 <section id="license" class="level2">
 <h2 class="anchored" data-anchor-id="license">License</h2>
 <p>This project is licensed under the MIT License - see the <a href="LICENSE">LICENSE</a> file for details.</p>
+</section>
+<section id="citation" class="level2">
+<h2 class="anchored" data-anchor-id="citation">Citation</h2>
+<p>To cite this package in publications, please use the following BibTeX entry:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bibtex code-with-copy"><code class="sourceCode bibtex"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="va">@misc</span>{<span class="ot">yasenov2025pyrifreg</span>,</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">author</span>       = {Vasco Yasenov},</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">title</span>        = {pyrifreg: Python Tools for Recentered Influence Function (RIF) Regression},</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">year</span>         = {2025},</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">howpublished</span> = {<span class="ch">\url</span>{https://github.com/vyasenov/pyrifreg}},</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">note</span>         = {Version 0.1.0}</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 </section>
 
