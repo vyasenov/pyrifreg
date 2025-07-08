@@ -4,7 +4,6 @@ Collection of Recentered Influence Function (RIF) generators for various distrib
 
 import numpy as np
 from scipy import stats
-from typing import Union, Optional, Callable
 
 class RIFGenerator:
     """Base class for RIF generators."""
@@ -29,10 +28,7 @@ class RIFGenerator:
         if len(y) < 2:
             raise ValueError("At least 2 data points are required for density estimation")
         
-        try:
-            self._kde = stats.gaussian_kde(y)
-        except Exception as e:
-            raise RuntimeError(f"Failed to estimate density: {str(e)}")
+        self._kde = stats.gaussian_kde(y)
     
     def compute(self, y: np.ndarray) -> np.ndarray:
         """
@@ -109,17 +105,14 @@ class QuantileRIF(RIFGenerator):
         if len(y) < 2:
             raise ValueError("At least 2 data points are required for quantile estimation")
         
-        try:
-            self._estimate_density(y)
-            q_val = np.quantile(y, self.q)
-            f_q = self._kde(np.array([q_val]))[0]
-            
-            if f_q <= 0:
-                raise RuntimeError(f"Density estimate at quantile {self.q} is non-positive")
-            
-            return q_val + (self.q - (y <= q_val).astype(float)) / f_q
-        except Exception as e:
-            raise RuntimeError(f"Failed to compute quantile RIF: {str(e)}")
+        self._estimate_density(y)
+        q_val = np.quantile(y, self.q)
+        f_q = self._kde(np.array([q_val]))[0]
+        
+        if f_q <= 0:
+            raise RuntimeError(f"Density estimate at quantile {self.q} is non-positive")
+        
+        return q_val + (self.q - (y <= q_val).astype(float)) / f_q
 
 
 class VarianceRIF(RIFGenerator):
@@ -144,11 +137,8 @@ class VarianceRIF(RIFGenerator):
         if len(y) < 2:
             raise ValueError("At least 2 data points are required for variance estimation")
         
-        try:
-            mean_y = np.mean(y)
-            return (y - mean_y)**2
-        except Exception as e:
-            raise RuntimeError(f"Failed to compute variance RIF: {str(e)}")
+        mean_y = np.mean(y)
+        return (y - mean_y)**2
 
 
 class GiniRIF(RIFGenerator):
@@ -173,26 +163,23 @@ class GiniRIF(RIFGenerator):
         if np.any(y < 0):
             raise ValueError("All values must be non-negative for Gini coefficient")
         
-        try:
-            n = len(y)
-            mean_y = np.mean(y)
-            
-            # Compute Gini coefficient
-            gini = 0
-            for i in range(n):
-                for j in range(n):
-                    gini += np.abs(y[i] - y[j])
-            gini = gini / (2 * n * mean_y)
-            
-            # Compute RIF for Gini
-            rif = np.zeros_like(y)
-            for i in range(n):
-                rank_i = np.sum(y <= y[i])  # Rank of observation i
-                rif[i] = gini + (2 * rank_i - n - 1) * y[i] / (n * mean_y) - gini
-            
-            return rif
-        except Exception as e:
-            raise RuntimeError(f"Failed to compute Gini RIF: {str(e)}")
+        n = len(y)
+        mean_y = np.mean(y)
+        
+        # Compute Gini coefficient
+        gini = 0
+        for i in range(n):
+            for j in range(n):
+                gini += np.abs(y[i] - y[j])
+        gini = gini / (2 * n * mean_y)
+        
+        # Compute RIF for Gini
+        rif = np.zeros_like(y)
+        for i in range(n):
+            rank_i = np.sum(y <= y[i])  # Rank of observation i
+            rif[i] = gini + (2 * rank_i - n - 1) * y[i] / (n * mean_y) - gini
+        
+        return rif
 
 
 class IQRRIF(RIFGenerator):
@@ -214,23 +201,20 @@ class IQRRIF(RIFGenerator):
         if len(y) < 4:
             raise ValueError("At least 4 data points are required for IQR estimation")
         
-        try:
-            self._estimate_density(y)
-            q75 = np.quantile(y, 0.75)
-            q25 = np.quantile(y, 0.25)
-            f_q75 = self._kde(q75)
-            f_q25 = self._kde(q25)
-            
-            if f_q75 <= 0 or f_q25 <= 0:
-                raise RuntimeError("Density estimates at quantiles are non-positive")
-            
-            # RIF for IQR is the difference of RIFs for 75th and 25th quantiles
-            rif_q75 = q75 + (0.75 - (y <= q75)) / f_q75
-            rif_q25 = q25 + (0.25 - (y <= q25)) / f_q25
-            
-            return rif_q75 - rif_q25
-        except Exception as e:
-            raise RuntimeError(f"Failed to compute IQR RIF: {str(e)}")
+        self._estimate_density(y)
+        q75 = np.quantile(y, 0.75)
+        q25 = np.quantile(y, 0.25)
+        f_q75 = self._kde(q75)
+        f_q25 = self._kde(q25)
+        
+        if f_q75 <= 0 or f_q25 <= 0:
+            raise RuntimeError("Density estimates at quantiles are non-positive")
+        
+        # RIF for IQR is the difference of RIFs for 75th and 25th quantiles
+        rif_q75 = q75 + (0.75 - (y <= q75)) / f_q75
+        rif_q25 = q25 + (0.25 - (y <= q25)) / f_q25
+        
+        return rif_q75 - rif_q25
 
 
 class EntropyRIF(RIFGenerator):
@@ -252,37 +236,34 @@ class EntropyRIF(RIFGenerator):
         if len(y) < 2:
             raise ValueError("At least 2 data points are required for entropy estimation")
         
-        try:
-            self._estimate_density(y)
-            n = len(y)
-            h = 1.06 * np.std(y) * n**(-1/5)  # Silverman's rule of thumb
+        self._estimate_density(y)
+        n = len(y)
+        h = 1.06 * np.std(y) * n**(-1/5)  # Silverman's rule of thumb
+        
+        if h <= 0:
+            raise RuntimeError("Bandwidth for density estimation is non-positive")
+        
+        kde_vals = self._kde(y)
+        if np.any(kde_vals <= 0):
+            raise RuntimeError("Density estimates contain non-positive values")
+        
+        entropy = -np.sum(kde_vals * np.log(kde_vals + 1e-10)) * h
+        
+        # Compute RIF for entropy
+        rif = np.zeros_like(y)
+        for i in range(n):
+            y_temp = y.copy()
+            y_temp[i] = y[i] + 1e-6
+            kde_temp = stats.gaussian_kde(y_temp)
+            kde_temp_vals = kde_temp(y_temp)
             
-            if h <= 0:
-                raise RuntimeError("Bandwidth for density estimation is non-positive")
+            if np.any(kde_temp_vals <= 0):
+                continue  # Skip this iteration if density is non-positive
             
-            kde_vals = self._kde(y)
-            if np.any(kde_vals <= 0):
-                raise RuntimeError("Density estimates contain non-positive values")
-            
-            entropy = -np.sum(kde_vals * np.log(kde_vals + 1e-10)) * h
-            
-            # Compute RIF for entropy
-            rif = np.zeros_like(y)
-            for i in range(n):
-                y_temp = y.copy()
-                y_temp[i] = y[i] + 1e-6
-                kde_temp = stats.gaussian_kde(y_temp)
-                kde_temp_vals = kde_temp(y_temp)
-                
-                if np.any(kde_temp_vals <= 0):
-                    continue  # Skip this iteration if density is non-positive
-                
-                entropy_temp = -np.sum(kde_temp_vals * np.log(kde_temp_vals + 1e-10)) * h
-                rif[i] = (entropy_temp - entropy) / 1e-6
-            
-            return rif
-        except Exception as e:
-            raise RuntimeError(f"Failed to compute entropy RIF: {str(e)}")
+            entropy_temp = -np.sum(kde_temp_vals * np.log(kde_temp_vals + 1e-10)) * h
+            rif[i] = (entropy_temp - entropy) / 1e-6
+        
+        return rif
 
 
 def get_rif_generator(statistic: str, **kwargs) -> RIFGenerator:
@@ -323,7 +304,4 @@ def get_rif_generator(statistic: str, **kwargs) -> RIFGenerator:
         raise ValueError(f"Unknown statistic: {statistic}. "
                         f"Available options are: {list(generators.keys())}")
     
-    try:
-        return generators[statistic](**kwargs)
-    except Exception as e:
-        raise RuntimeError(f"Failed to create RIF generator for statistic '{statistic}': {str(e)}") 
+    return generators[statistic](**kwargs) 

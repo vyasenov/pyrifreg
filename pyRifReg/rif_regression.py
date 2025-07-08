@@ -3,8 +3,6 @@ Implementation of Recentered Influence Function (RIF) regression.
 """
 
 import numpy as np
-import pandas as pd
-from scipy import stats
 from sklearn.base import BaseEstimator, RegressorMixin
 from statsmodels.regression.linear_model import OLS
 from statsmodels.tools.tools import add_constant
@@ -58,8 +56,6 @@ class RIFRegression(BaseEstimator, RegressorMixin):
                 raise TypeError("bootstrap_reps must be an integer")
             if bootstrap_reps <= 0:
                 raise ValueError("bootstrap_reps must be positive")
-            if bootstrap_reps < 100:
-                raise ValueError("bootstrap_reps should be at least 100 for reliable inference")
         elif bootstrap_reps != 1000:
             raise ValueError("bootstrap_reps should only be specified when cov_type='bootstrap'")
         
@@ -70,17 +66,13 @@ class RIFRegression(BaseEstimator, RegressorMixin):
         self.model = None
         self.results = None
         self.rif_generator = None
-        self.bootstrap_results = None
         
     def _get_rif_generator(self):
         """Get the appropriate RIF generator based on the statistic."""
-        try:
-            kwargs = {}
-            if self.statistic == 'quantile':
-                kwargs['q'] = self.q
-            return get_rif_generator(self.statistic, **kwargs)
-        except Exception as e:
-            raise RuntimeError(f"Failed to create RIF generator for statistic '{self.statistic}': {str(e)}")
+        kwargs = {}
+        if self.statistic == 'quantile':
+            kwargs['q'] = self.q
+        return get_rif_generator(self.statistic, **kwargs)
     
     def _bootstrap_covariance(self, X, y, rif):
         """
@@ -101,52 +93,37 @@ class RIFRegression(BaseEstimator, RegressorMixin):
             Bootstrap covariance matrix
         """
         n_samples = X.shape[0]
-        n_features = X.shape[1]
         
         # Store bootstrap coefficient estimates
-        bootstrap_coeffs = np.zeros((self.bootstrap_reps, n_features))
+        bootstrap_coeffs = []
         
         for i in range(self.bootstrap_reps):
-            try:
-                # Generate bootstrap indices
-                bootstrap_indices = np.random.choice(n_samples, size=n_samples, replace=True)
-                
-                # Bootstrap samples
-                X_boot = X[bootstrap_indices]
-                y_boot = y[bootstrap_indices]
-                
-                # Recompute RIF for bootstrap sample
-                rif_boot = self.rif_generator.compute(y_boot)
-                
-                # Check for numerical issues in bootstrap RIF
-                if np.any(np.isnan(rif_boot)) or np.any(np.isinf(rif_boot)):
-                    continue  # Skip this bootstrap replication
-                
-                # Fit OLS on bootstrap sample
-                model_boot = OLS(rif_boot, X_boot)
-                results_boot = model_boot.fit()
-                
-                # Store coefficient estimates
-                bootstrap_coeffs[i] = results_boot.params
-                
-            except Exception:
-                # Skip this bootstrap replication if it fails
-                continue
-        
-        # Remove failed bootstrap replications
-        successful_reps = np.sum(~np.any(np.isnan(bootstrap_coeffs), axis=1))
-        
-        if successful_reps < self.bootstrap_reps * 0.5:
-            raise RuntimeError(f"Too many bootstrap replications failed. "
-                             f"Only {successful_reps}/{self.bootstrap_reps} successful.")
-        
-        # Use only successful replications
-        bootstrap_coeffs = bootstrap_coeffs[~np.any(np.isnan(bootstrap_coeffs), axis=1)]
-        
-        # Compute covariance matrix
+            # Generate bootstrap indices
+            bootstrap_indices = np.random.choice(n_samples, size=n_samples, replace=True)
+            
+            # Bootstrap samples
+            X_boot = X[bootstrap_indices]
+            y_boot = y[bootstrap_indices]
+            
+            # Recompute RIF for bootstrap sample
+            rif_boot = self.rif_generator.compute(y_boot)
+            
+            # Check for numerical issues in bootstrap RIF
+            if np.any(np.isnan(rif_boot)) or np.any(np.isinf(rif_boot)):
+                continue  # Skip this bootstrap replication
+            
+            # Fit OLS on bootstrap sample
+            model_boot = OLS(rif_boot, X_boot)
+            results_boot = model_boot.fit()
+            
+            # Store coefficient estimates
+            bootstrap_coeffs.append(results_boot.params)
+
+        # Convert to numpy array and compute covariance matrix
+        bootstrap_coeffs = np.array(bootstrap_coeffs)
         cov_matrix = np.cov(bootstrap_coeffs.T)
         
-        return cov_matrix, successful_reps
+        return cov_matrix
     
     def fit(self, X, y):
         """
@@ -175,11 +152,8 @@ class RIFRegression(BaseEstimator, RegressorMixin):
             y = y.to_numpy()
         
         # Convert to numpy arrays
-        try:
-            X = np.asarray(X)
-            y = np.asarray(y)
-        except Exception as e:
-            raise TypeError(f"Failed to convert inputs to numpy arrays: {str(e)}")
+        X = np.asarray(X)
+        y = np.asarray(y)
         
         # Check X dimensions and reshape if needed
         if X.ndim == 1:
@@ -207,44 +181,29 @@ class RIFRegression(BaseEstimator, RegressorMixin):
             raise ValueError("At least 2 observations are required for regression")
         
         # Get RIF generator and compute RIF (y validation happens in RIF generators)
-        try:
-            self.rif_generator = self._get_rif_generator()
-            rif = self.rif_generator.compute(y)
-        except Exception as e:
-            raise RuntimeError(f"Failed to compute RIF: {str(e)}")
+        self.rif_generator = self._get_rif_generator()
+        rif = self.rif_generator.compute(y)
         
         # Validate RIF output
         if np.any(np.isnan(rif)) or np.any(np.isinf(rif)):
             raise RuntimeError("RIF computation produced NaN or infinite values")
         
         # Add constant term
-        try:
-            X = add_constant(X)
-        except Exception as e:
-            raise RuntimeError(f"Failed to add constant term: {str(e)}")
+        X = add_constant(X)
         
         # Fit OLS regression
-        try:
-            self.model = OLS(rif, X)
+        self.model = OLS(rif, X)
+        
+        if self.cov_type == 'bootstrap':
+            # Use bootstrap for covariance estimation
+            self.results = self.model.fit()
+            bootstrap_cov = self._bootstrap_covariance(X, y, rif)
             
-            if self.cov_type == 'bootstrap':
-                # Use bootstrap for covariance estimation
-                self.results = self.model.fit()
-                bootstrap_cov, successful_reps = self._bootstrap_covariance(X, y, rif)
-                
-                # Update results with bootstrap covariance
-                self.results.cov_params = lambda: bootstrap_cov
-                self.bootstrap_results = {
-                    'cov_matrix': bootstrap_cov,
-                    'successful_reps': successful_reps,
-                    'total_reps': self.bootstrap_reps
-                }
-            else:
-                # Use standard covariance estimation
-                self.results = self.model.fit(cov_type=self.cov_type)
-                
-        except Exception as e:
-            raise RuntimeError(f"Failed to fit regression model: {str(e)}")
+            # Update results with bootstrap covariance
+            self.results.cov_params = lambda: bootstrap_cov
+        else:
+            # Use standard covariance estimation
+            self.results = self.model.fit(cov_type=self.cov_type)
         
         return self
     
@@ -279,10 +238,7 @@ class RIFRegression(BaseEstimator, RegressorMixin):
             X = X.to_numpy()
         
         # Convert to numpy array
-        try:
-            X = np.asarray(X)
-        except Exception as e:
-            raise TypeError(f"Failed to convert X to numpy array: {str(e)}")
+        X = np.asarray(X)
         
         # Check dimensions and reshape if needed
         if X.ndim == 1:
@@ -295,10 +251,7 @@ class RIFRegression(BaseEstimator, RegressorMixin):
             raise ValueError("X contains NaN or infinite values")
         
         # Add constant term to match the fitted model
-        try:
-            X = add_constant(X)
-        except Exception as e:
-            raise RuntimeError(f"Failed to add constant term: {str(e)}")
+        X = add_constant(X)
         
         # Check that number of features matches the fitted model
         if X.shape[1] != len(self.results.params):
@@ -307,20 +260,6 @@ class RIFRegression(BaseEstimator, RegressorMixin):
         
         # Return fitted values
         return self.results.fittedvalues[:len(X)]
-    
-    def get_bootstrap_info(self):
-        """
-        Get information about bootstrap results.
-        
-        Returns
-        -------
-        dict or None
-            Dictionary containing bootstrap information if bootstrap was used,
-            None otherwise
-        """
-        if self.cov_type != 'bootstrap':
-            return None
-        return self.bootstrap_results
     
     def summary(self):
         """
@@ -334,17 +273,4 @@ class RIFRegression(BaseEstimator, RegressorMixin):
         if self.results is None:
             raise ValueError("Model has not been fitted yet. Call fit() first.")
         
-        summary = self.results.summary()
-        
-        # Add bootstrap information to summary if bootstrap was used
-        if self.cov_type == 'bootstrap' and self.bootstrap_results is not None:
-            bootstrap_info = (
-                f"\nBootstrap Results:\n"
-                f"  Total replications: {self.bootstrap_results['total_reps']}\n"
-                f"  Successful replications: {self.bootstrap_results['successful_reps']}\n"
-                f"  Success rate: {self.bootstrap_results['successful_reps']/self.bootstrap_results['total_reps']:.1%}"
-            )
-            # Note: We can't directly modify the summary object, but the information
-            # is available through get_bootstrap_info()
-        
-        return summary 
+        return self.results.summary() 

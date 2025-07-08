@@ -42,8 +42,7 @@ You can find more examples in [example.py](https://github.com/vyasenov/pyrifreg/
 
 ## Examples
 
-See the `examples/` directory for detailed examples including:
-
+You can find detailed usage examples in the  `examples/` directory.
 
 ## Background
 
@@ -147,7 +146,6 @@ The package includes support for bootstrap inference out of the box.
 ## References
 
 * Firpo, S., Fortin, N. M., & Lemieux, T. (2009). *Unconditional Quantile Regressions*. Econometrica, 77(3), 953–973.
-* Hampel, F. R. (1974). *The Influence Curve and Its Role in Robust Estimation*. Journal of the American Statistical Association, 69(346), 383–393.
 * Koenker, R., & Bassett Jr, G. (1978). Regression quantiles. Econometrica: journal of the Econometric Society, 33-50.
 * Rios-Avila, F. (2020). *Recentered influence functions (RIFs) in Stata: RIF regression and RIF decomposition*. The Stata Journal, 20(1), 51-94.
 
@@ -156,7 +154,6 @@ The package includes support for bootstrap inference out of the box.
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Citation
-
 
 To cite this package in publications, please use the following BibTeX entry:
 
