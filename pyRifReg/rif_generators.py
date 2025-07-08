@@ -112,12 +112,12 @@ class QuantileRIF(RIFGenerator):
         try:
             self._estimate_density(y)
             q_val = np.quantile(y, self.q)
-            f_q = self._kde(q_val)
+            f_q = self._kde(np.array([q_val]))[0]
             
             if f_q <= 0:
                 raise RuntimeError(f"Density estimate at quantile {self.q} is non-positive")
             
-            return q_val + (self.q - (y <= q_val)) / f_q
+            return q_val + (self.q - (y <= q_val).astype(float)) / f_q
         except Exception as e:
             raise RuntimeError(f"Failed to compute quantile RIF: {str(e)}")
 
@@ -175,22 +175,20 @@ class GiniRIF(RIFGenerator):
         
         try:
             n = len(y)
-            y_sorted = np.sort(y)
-            ranks = np.arange(1, n + 1)
+            mean_y = np.mean(y)
             
-            if np.sum(y_sorted) == 0:
-                raise ValueError("Sum of values cannot be zero for Gini coefficient")
-            
-            gini = 2 * np.sum(ranks * y_sorted) / (n * np.sum(y_sorted)) - (n + 1) / n
+            # Compute Gini coefficient
+            gini = 0
+            for i in range(n):
+                for j in range(n):
+                    gini += np.abs(y[i] - y[j])
+            gini = gini / (2 * n * mean_y)
             
             # Compute RIF for Gini
             rif = np.zeros_like(y)
             for i in range(n):
-                y_temp = y.copy()
-                y_temp[i] = y[i] + 1e-6  # Small perturbation
-                y_temp_sorted = np.sort(y_temp)
-                gini_temp = 2 * np.sum(ranks * y_temp_sorted) / (n * np.sum(y_temp_sorted)) - (n + 1) / n
-                rif[i] = (gini_temp - gini) / 1e-6
+                rank_i = np.sum(y <= y[i])  # Rank of observation i
+                rif[i] = gini + (2 * rank_i - n - 1) * y[i] / (n * mean_y) - gini
             
             return rif
         except Exception as e:
