@@ -11,8 +11,22 @@ class RIFGenerator:
     def __init__(self):
         self._kde = None
     
-    def _estimate_density(self, y: np.ndarray) -> None:
-        """Estimate the density function using kernel density estimation."""
+    def _validate_data(self, y: np.ndarray, min_points: int = 1) -> np.ndarray:
+        """
+        Validate input data and convert to numpy array.
+        
+        Parameters
+        ----------
+        y : array-like
+            Input data to validate
+        min_points : int, default=1
+            Minimum number of data points required
+            
+        Returns
+        -------
+        y : np.ndarray
+            Validated and converted input data
+        """
         if y is None:
             raise ValueError("Input data cannot be None")
         
@@ -22,12 +36,20 @@ class RIFGenerator:
         if y.ndim != 1:
             raise ValueError(f"Input data must be 1D array, got {y.ndim}D")
         
+        if len(y) == 0:
+            raise ValueError("Input data cannot be empty")
+        
         if np.any(np.isnan(y)) or np.any(np.isinf(y)):
             raise ValueError("Input data contains NaN or infinite values")
         
-        if len(y) < 2:
-            raise ValueError("At least 2 data points are required for density estimation")
+        if len(y) < min_points:
+            raise ValueError(f"At least {min_points} data points are required")
         
+        return y
+    
+    def _estimate_density(self, y: np.ndarray) -> None:
+        """Estimate the density function using kernel density estimation."""
+        y = self._validate_data(y, min_points=2)
         self._kde = stats.gaussian_kde(y)
     
     def compute(self, y: np.ndarray) -> np.ndarray:
@@ -51,21 +73,7 @@ class MeanRIF(RIFGenerator):
     """RIF generator for the mean."""
     
     def compute(self, y: np.ndarray) -> np.ndarray:
-        if y is None:
-            raise ValueError("Input data cannot be None")
-        
-        if not isinstance(y, np.ndarray):
-            y = np.asarray(y)
-        
-        if y.ndim != 1:
-            raise ValueError(f"Input data must be 1D array, got {y.ndim}D")
-        
-        if len(y) == 0:
-            raise ValueError("Input data cannot be empty")
-        
-        if np.any(np.isnan(y)) or np.any(np.isinf(y)):
-            raise ValueError("Input data contains NaN or infinite values")
-        
+        y = self._validate_data(y, min_points=1)
         return y
 
 
@@ -90,20 +98,7 @@ class QuantileRIF(RIFGenerator):
         self.q = q
     
     def compute(self, y: np.ndarray) -> np.ndarray:
-        if y is None:
-            raise ValueError("Input data cannot be None")
-        
-        if not isinstance(y, np.ndarray):
-            y = np.asarray(y)
-        
-        if y.ndim != 1:
-            raise ValueError(f"Input data must be 1D array, got {y.ndim}D")
-        
-        if np.any(np.isnan(y)) or np.any(np.isinf(y)):
-            raise ValueError("Input data contains NaN or infinite values")
-        
-        if len(y) < 2:
-            raise ValueError("At least 2 data points are required for quantile estimation")
+        y = self._validate_data(y, min_points=2)
         
         self._estimate_density(y)
         q_val = np.quantile(y, self.q)
@@ -119,24 +114,7 @@ class VarianceRIF(RIFGenerator):
     """RIF generator for variance."""
     
     def compute(self, y: np.ndarray) -> np.ndarray:
-        if y is None:
-            raise ValueError("Input data cannot be None")
-        
-        if not isinstance(y, np.ndarray):
-            y = np.asarray(y)
-        
-        if y.ndim != 1:
-            raise ValueError(f"Input data must be 1D array, got {y.ndim}D")
-        
-        if len(y) == 0:
-            raise ValueError("Input data cannot be empty")
-        
-        if np.any(np.isnan(y)) or np.any(np.isinf(y)):
-            raise ValueError("Input data contains NaN or infinite values")
-        
-        if len(y) < 2:
-            raise ValueError("At least 2 data points are required for variance estimation")
-        
+        y = self._validate_data(y, min_points=2)
         mean_y = np.mean(y)
         return (y - mean_y)**2
 
@@ -145,20 +123,7 @@ class GiniRIF(RIFGenerator):
     """RIF generator for Gini coefficient."""
     
     def compute(self, y: np.ndarray) -> np.ndarray:
-        if y is None:
-            raise ValueError("Input data cannot be None")
-        
-        if not isinstance(y, np.ndarray):
-            y = np.asarray(y)
-        
-        if y.ndim != 1:
-            raise ValueError(f"Input data must be 1D array, got {y.ndim}D")
-        
-        if np.any(np.isnan(y)) or np.any(np.isinf(y)):
-            raise ValueError("Input data contains NaN or infinite values")
-        
-        if len(y) < 2:
-            raise ValueError("At least 2 data points are required for Gini coefficient estimation")
+        y = self._validate_data(y, min_points=2)
         
         if np.any(y < 0):
             raise ValueError("All values must be non-negative for Gini coefficient")
@@ -186,20 +151,7 @@ class IQRRIF(RIFGenerator):
     """RIF generator for Interquartile Range (IQR)."""
     
     def compute(self, y: np.ndarray) -> np.ndarray:
-        if y is None:
-            raise ValueError("Input data cannot be None")
-        
-        if not isinstance(y, np.ndarray):
-            y = np.asarray(y)
-        
-        if y.ndim != 1:
-            raise ValueError(f"Input data must be 1D array, got {y.ndim}D")
-        
-        if np.any(np.isnan(y)) or np.any(np.isinf(y)):
-            raise ValueError("Input data contains NaN or infinite values")
-        
-        if len(y) < 4:
-            raise ValueError("At least 4 data points are required for IQR estimation")
+        y = self._validate_data(y, min_points=4)
         
         self._estimate_density(y)
         q75 = np.quantile(y, 0.75)
@@ -221,20 +173,10 @@ class EntropyRIF(RIFGenerator):
     """RIF generator for entropy."""
     
     def compute(self, y: np.ndarray) -> np.ndarray:
-        if y is None:
-            raise ValueError("Input data cannot be None")
+        y = self._validate_data(y, min_points=2)
         
-        if not isinstance(y, np.ndarray):
-            y = np.asarray(y)
-        
-        if y.ndim != 1:
-            raise ValueError(f"Input data must be 1D array, got {y.ndim}D")
-        
-        if np.any(np.isnan(y)) or np.any(np.isinf(y)):
-            raise ValueError("Input data contains NaN or infinite values")
-        
-        if len(y) < 2:
-            raise ValueError("At least 2 data points are required for entropy estimation")
+        if np.any(y <= 0):
+            raise ValueError("All values must be positive for entropy estimation")
         
         self._estimate_density(y)
         n = len(y)

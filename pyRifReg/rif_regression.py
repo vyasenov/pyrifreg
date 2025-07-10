@@ -74,6 +74,78 @@ class RIFRegression(BaseEstimator, RegressorMixin):
             kwargs['q'] = self.q
         return get_rif_generator(self.statistic, **kwargs)
     
+    def _validate_data(self, X, y=None, for_prediction=False):
+        """
+        Validate input data and convert to numpy arrays.
+        
+        Parameters
+        ----------
+        X : array-like
+            Input features
+        y : array-like, optional
+            Target values (only for fit method)
+        for_prediction : bool, default=False
+            Whether this is for prediction (affects validation requirements)
+            
+        Returns
+        -------
+        X : np.ndarray
+            Validated and converted features
+        y : np.ndarray, optional
+            Validated and converted target values (only if y was provided)
+        """
+        # Input validation for X and y
+        if X is None:
+            raise ValueError("X cannot be None")
+        
+        if y is None and not for_prediction:
+            raise ValueError("y cannot be None for fitting")
+        
+        # Convert pandas inputs to numpy arrays if needed
+        if hasattr(X, 'to_numpy'):
+            X = X.to_numpy()
+        if y is not None and hasattr(y, 'to_numpy'):
+            y = y.to_numpy()
+        
+        # Convert to numpy arrays
+        X = np.asarray(X)
+        if y is not None:
+            y = np.asarray(y)
+        
+        # Check X dimensions and reshape if needed
+        if X.ndim == 1:
+            X = X.reshape(-1, 1)
+        elif X.ndim != 2:
+            raise ValueError(f"X must be 1D or 2D array, got {X.ndim}D")
+        
+        # Check for NaN or infinite values in X
+        if np.any(np.isnan(X)) or np.any(np.isinf(X)):
+            raise ValueError("X contains NaN or infinite values")
+        
+        if y is not None:
+            # Check shapes compatibility
+            if X.shape[0] != y.shape[0]:
+                raise ValueError(f"X and y must have the same number of observations. "
+                               f"X has {X.shape[0]} observations, y has {y.shape[0]} observations")
+            
+            # Check for NaN or infinite values in y
+            if np.any(np.isnan(y)) or np.any(np.isinf(y)):
+                raise ValueError("y contains NaN or infinite values")
+        
+        if not for_prediction:
+            # Additional validation for fitting
+            if X.shape[0] == 0:
+                raise ValueError("X cannot be empty")
+            
+            if X.shape[1] == 0:
+                raise ValueError("X must have at least one feature")
+            
+            # Check for sufficient data
+            if X.shape[0] < 2:
+                raise ValueError("At least 2 observations are required for regression")
+        
+        return X, y if y is not None else X
+    
     def _bootstrap_covariance(self, X, y, rif):
         """
         Compute bootstrap-based covariance matrix for coefficient estimates.
@@ -141,44 +213,8 @@ class RIFRegression(BaseEstimator, RegressorMixin):
         self : object
             Returns self.
         """
-        # Input validation for X and y
-        if X is None or y is None:
-            raise ValueError("X and y cannot be None")
-        
-        # Convert pandas inputs to numpy arrays if needed
-        if hasattr(X, 'to_numpy'):
-            X = X.to_numpy()
-        if hasattr(y, 'to_numpy'):
-            y = y.to_numpy()
-        
-        # Convert to numpy arrays
-        X = np.asarray(X)
-        y = np.asarray(y)
-        
-        # Check X dimensions and reshape if needed
-        if X.ndim == 1:
-            X = X.reshape(-1, 1)
-        elif X.ndim != 2:
-            raise ValueError(f"X must be 1D or 2D array, got {X.ndim}D")
-        
-        # Check shapes compatibility
-        if X.shape[0] != y.shape[0]:
-            raise ValueError(f"X and y must have the same number of observations. "
-                           f"X has {X.shape[0]} observations, y has {y.shape[0]} observations")
-        
-        if X.shape[0] == 0:
-            raise ValueError("X cannot be empty")
-        
-        if X.shape[1] == 0:
-            raise ValueError("X must have at least one feature")
-        
-        # Check for NaN or infinite values in X
-        if np.any(np.isnan(X)) or np.any(np.isinf(X)):
-            raise ValueError("X contains NaN or infinite values")
-        
-        # Check for sufficient data
-        if X.shape[0] < 2:
-            raise ValueError("At least 2 observations are required for regression")
+        # Validate and convert input data
+        X, y = self._validate_data(X, y, for_prediction=False)
         
         # Get RIF generator and compute RIF (y validation happens in RIF generators)
         self.rif_generator = self._get_rif_generator()
@@ -229,26 +265,8 @@ class RIFRegression(BaseEstimator, RegressorMixin):
         if self.results is None:
             raise ValueError("Model has not been fitted yet. Call fit() first.")
         
-        # Input validation
-        if X is None:
-            raise ValueError("X cannot be None")
-        
-        # Convert pandas inputs to numpy arrays if needed
-        if hasattr(X, 'to_numpy'):
-            X = X.to_numpy()
-        
-        # Convert to numpy array
-        X = np.asarray(X)
-        
-        # Check dimensions and reshape if needed
-        if X.ndim == 1:
-            X = X.reshape(-1, 1)
-        elif X.ndim != 2:
-            raise ValueError(f"X must be 1D or 2D array, got {X.ndim}D")
-        
-        # Check for NaN or infinite values
-        if np.any(np.isnan(X)) or np.any(np.isinf(X)):
-            raise ValueError("X contains NaN or infinite values")
+        # Validate and convert input data
+        X, _ = self._validate_data(X, for_prediction=True)
         
         # Add constant term to match the fitted model
         X = add_constant(X)
