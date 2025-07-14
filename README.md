@@ -1,5 +1,7 @@
 # pyrifreg
 
+![](https://img.shields.io/badge/license-MIT-green)
+
 A Python package for Recentered Influence Function (RIF) regression analysis. Provides tools for analyzing distributional effects in econometrics and data science applications. 
 
 ## Installation
