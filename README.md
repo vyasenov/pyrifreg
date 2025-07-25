@@ -17,7 +17,7 @@ pip install pyrifreg
 - Implementation of Recentered Influence Function (RIF) regression
 - Support for various distributional statistics (mean, quantiles, variance, gini, etc.)
 - Easy-to-use API for regression analysis
-- Integration with pandas and scikit-learn
+- Integration with `pandas` and `scikit-learn`
 
 
 ## Quick Start
